@@ -5,15 +5,51 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Battleship Game</title>
+    <title>Cellular Automata</title>
 
     <link rel="stylesheet" type="text/css" href="style.css">
-
     <script src="libraries/p5.min.js"></script>
 </head>
 
 <body>
+    <div id="controls">
+        <div class="control-group">
+            <label>Grid Width:</label>
+            <input type="range" id="gridWidth" min="10" max="200" value="50">
+            <span id="gridWidthValue">50</span>
+        </div>
+
+        <div class="control-group">
+            <label>Grid Height:</label>
+            <input type="range" id="gridHeight" min="10" max="150" value="40">
+            <span id="gridHeightValue">40</span>
+        </div>
+
+        <div class="control-group">
+            <label>Grid Type:</label>
+            <button id="hexGrid" class="active">Hexagonal</button>
+            <button id="triGrid">Triangular</button>
+        </div>
+
+        <div class="control-group">
+            <label>Controls:</label>
+            <span>Left click: place | Right click: erase | Space + drag: pan | Mouse wheel: zoom</span>
+        </div>
+
+        <div class="control-group">
+            <label>Simulation:</label>
+            <button id="playPause">Play</button>
+            <button id="stepBtn">Step</button>
+            <button id="clearBtn">Clear</button>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
     <script src="sketch.js"></script>
+    <script src="gridRenderer.js"></script>
+    <script src="gridSystem.js"></script>
+    <script src="camera.js"></script>
 </body>
 
 </html>
