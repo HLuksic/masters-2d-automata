@@ -27,6 +27,19 @@ class GridRenderer {
         return baseSize;
     }
 
+    setCellColor(cellValue) {
+        if (cellValue === 0) {
+            fill(255); // Dead = white
+        } else {
+            if (cellStages === 1) {
+                fill(0); // Always black when there's only 1 stage
+            } else {
+                let intensity = map(cellValue, 1, cellStages, 100, 0);
+                fill(intensity);
+            }
+        }
+    }
+
     renderHexGrid(cellSize) {
         stroke(150);
         strokeWeight(0.5);
@@ -44,12 +57,7 @@ class GridRenderer {
                 let hexY = startY + y * hexHeight + (x % 2) * hexHeight * 0.5;
 
                 let cellValue = this.grid.getCell(x, y);
-                if (cellValue === 1) {
-                    fill(0);
-                } else {
-                    fill(255);
-                }
-
+                this.setCellColor(cellValue);
                 this.drawHexagon(hexX, hexY, hexRadius);
             }
         }
@@ -77,11 +85,7 @@ class GridRenderer {
                 }
 
                 let cellValue = this.grid.getCell(x, y);
-                if (cellValue === 1) {
-                    fill(0);
-                } else {
-                    fill(255);
-                }
+                this.setCellColor(cellValue);
 
                 // Alternate triangle direction based on column
                 let pointUp = x % 2 === 0;

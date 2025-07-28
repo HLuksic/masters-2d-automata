@@ -12,7 +12,7 @@ class GridSystem {
         for (let y = 0; y < this.height; y++) {
             grid[y] = [];
             for (let x = 0; x < this.width; x++) {
-                grid[y][x] = 0; // 0 = empty, 1 = alive
+                grid[y][x] = 0; // 0 = dead, 1+ = alive
             }
         }
         return grid;
@@ -147,6 +147,10 @@ class GridSystem {
         return neighbors;
     }
 
+    isCellAlive(x, y) {
+        return this.getCell(x, y) > 0;
+    }
+
     countLiveNeighbors(x, y) {
         let neighbors;
 
@@ -160,7 +164,7 @@ class GridSystem {
 
         let count = 0;
         for (let [nx, ny] of neighbors) {
-            if (this.getCell(nx, ny) === 1) {
+            if (this.isCellAlive(nx, ny)) {
                 count++;
             }
         }
@@ -175,36 +179,25 @@ class GridSystem {
             for (let x = 0; x < this.width; x++) {
                 let liveNeighbors = this.countLiveNeighbors(x, y);
                 let currentCell = this.getCell(x, y);
+                let isAlive = this.isCellAlive(x, y);
 
-                if (this.type === 'hex') {
-                    // Hexagonal rules
-                    if (currentCell === 1) {
-                        if (liveNeighbors === 2 || liveNeighbors === 3) {
-                            newGrid[y][x] = 1;
-                        } else {
-                            newGrid[y][x] = 0;
-                        }
+                if (isAlive) {
+                    // Live cell - check survival rules
+                    if (liveNeighbors >= gameRules.survivalMin && liveNeighbors <= gameRules.survivalMax) {
+                        // Cell survives - reset to full life
+                        newGrid[y][x] = cellStages;
                     } else {
-                        if (liveNeighbors === 2) {
-                            newGrid[y][x] = 1;
-                        } else {
-                            newGrid[y][x] = 0;
-                        }
+                        // Cell should die - decrease stage
+                        newGrid[y][x] = Math.max(0, currentCell - 1);
                     }
-                } else if (this.type === 'tri') {
-                    // Triangular rules (adapted for 12 neighbors)
-                    if (currentCell === 1) {
-                        if (liveNeighbors >= 3 && liveNeighbors <= 5) {
-                            newGrid[y][x] = 1;
-                        } else {
-                            newGrid[y][x] = 0;
-                        }
+                } else {
+                    // Dead cell - check birth rules
+                    if (liveNeighbors >= gameRules.birthMin && liveNeighbors <= gameRules.birthMax) {
+                        // Cell is born
+                        newGrid[y][x] = cellStages;
                     } else {
-                        if (liveNeighbors === 3 || liveNeighbors === 4) {
-                            newGrid[y][x] = 1;
-                        } else {
-                            newGrid[y][x] = 0;
-                        }
+                        // Cell stays dead
+                        newGrid[y][x] = 0;
                     }
                 }
             }

@@ -12,6 +12,17 @@ let renderer;
 let spacePressed = false;
 let isPlaying = false;
 let playPauseBtn, stepBtn, clearBtn;
+let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
+let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
+let cellStages = 1; // Number of stages before full death
+let cellStagesSlider, cellStagesValue;
+
+let gameRules = {
+    birthMin: 2,
+    birthMax: 2,
+    survivalMin: 2,
+    survivalMax: 3
+};
 
 // UI elements
 let gridWidthSlider, gridHeightSlider;
@@ -41,6 +52,19 @@ function setupUI() {
     hexBtn = select('#hexGrid');
     triBtn = select('#triGrid');
 
+    birthMinSlider = select('#birthMin');
+    birthMaxSlider = select('#birthMax');
+    survivalMinSlider = select('#survivalMin');
+    survivalMaxSlider = select('#survivalMax');
+
+    birthMinValue = select('#birthMinValue');
+    birthMaxValue = select('#birthMaxValue');
+    survivalMinValue = select('#survivalMinValue');
+    survivalMaxValue = select('#survivalMaxValue');
+
+    cellStagesSlider = select('#cellStages');
+    cellStagesValue = select('#cellStagesValue');
+
     // Slider events
     gridWidthSlider.input(() => {
         let value = gridWidthSlider.value();
@@ -52,6 +76,11 @@ function setupUI() {
         let value = gridHeightSlider.value();
         gridHeightValue.html(value);
         gridSystem.resize(gridSystem.width, parseInt(value));
+    });
+
+    cellStagesSlider.input(() => {
+        cellStages = parseInt(cellStagesSlider.value());
+        cellStagesValue.html(cellStages);
     });
 
     // Button events
@@ -75,6 +104,82 @@ function setupUI() {
     clearBtn.mousePressed(() => {
         gridSystem.cells = gridSystem.createEmptyGrid();
     });
+
+    birthMinSlider.input(() => {
+        gameRules.birthMin = parseInt(birthMinSlider.value());
+        birthMinValue.html(gameRules.birthMin);
+        // Ensure min <= max
+        if (gameRules.birthMin > gameRules.birthMax) {
+            gameRules.birthMax = gameRules.birthMin;
+            birthMaxSlider.value(gameRules.birthMax);
+            birthMaxValue.html(gameRules.birthMax);
+        }
+    });
+
+    birthMaxSlider.input(() => {
+        gameRules.birthMax = parseInt(birthMaxSlider.value());
+        birthMaxValue.html(gameRules.birthMax);
+        // Ensure min <= max
+        if (gameRules.birthMax < gameRules.birthMin) {
+            gameRules.birthMin = gameRules.birthMax;
+            birthMinSlider.value(gameRules.birthMin);
+            birthMinValue.html(gameRules.birthMin);
+        }
+    });
+
+    survivalMinSlider.input(() => {
+        gameRules.survivalMin = parseInt(survivalMinSlider.value());
+        survivalMinValue.html(gameRules.survivalMin);
+        // Ensure min <= max
+        if (gameRules.survivalMin > gameRules.survivalMax) {
+            gameRules.survivalMax = gameRules.survivalMin;
+            survivalMaxSlider.value(gameRules.survivalMax);
+            survivalMaxValue.html(gameRules.survivalMax);
+        }
+    });
+
+    survivalMaxSlider.input(() => {
+        gameRules.survivalMax = parseInt(survivalMaxSlider.value());
+        survivalMaxValue.html(gameRules.survivalMax);
+        // Ensure min <= max
+        if (gameRules.survivalMax < gameRules.survivalMin) {
+            gameRules.survivalMin = gameRules.survivalMax;
+            survivalMinSlider.value(gameRules.survivalMin);
+            survivalMinValue.html(gameRules.survivalMin);
+        }
+    });
+}
+
+function updateSliderBounds() {
+    let maxNeighbors = gridSystem.type === 'hex' ? 6 : 12;
+
+    // Update slider max values
+    birthMinSlider.attribute('max', maxNeighbors);
+    birthMaxSlider.attribute('max', maxNeighbors);
+    survivalMinSlider.attribute('max', maxNeighbors);
+    survivalMaxSlider.attribute('max', maxNeighbors);
+
+    // Clamp current values to new bounds
+    if (gameRules.birthMin > maxNeighbors) {
+        gameRules.birthMin = maxNeighbors;
+        birthMinSlider.value(gameRules.birthMin);
+        birthMinValue.html(gameRules.birthMin);
+    }
+    if (gameRules.birthMax > maxNeighbors) {
+        gameRules.birthMax = maxNeighbors;
+        birthMaxSlider.value(gameRules.birthMax);
+        birthMaxValue.html(gameRules.birthMax);
+    }
+    if (gameRules.survivalMin > maxNeighbors) {
+        gameRules.survivalMin = maxNeighbors;
+        survivalMinSlider.value(gameRules.survivalMin);
+        survivalMinValue.html(gameRules.survivalMin);
+    }
+    if (gameRules.survivalMax > maxNeighbors) {
+        gameRules.survivalMax = maxNeighbors;
+        survivalMaxSlider.value(gameRules.survivalMax);
+        survivalMaxValue.html(gameRules.survivalMax);
+    }
 }
 
 function setGridType(type, activeBtn) {
@@ -84,6 +189,28 @@ function setGridType(type, activeBtn) {
     hexBtn.removeClass('active');
     triBtn.removeClass('active');
     activeBtn.addClass('active');
+
+    // Update slider bounds and set default rules
+    updateSliderBounds();
+
+    if (type === 'hex') {
+        // Default Conway rules for hex
+        gameRules = { birthMin: 2, birthMax: 2, survivalMin: 2, survivalMax: 3 };
+    } else if (type === 'tri') {
+        // Default rules for tri
+        gameRules = { birthMin: 3, birthMax: 4, survivalMin: 3, survivalMax: 5 };
+    }
+
+    // Update UI to reflect new rules
+    birthMinSlider.value(gameRules.birthMin);
+    birthMaxSlider.value(gameRules.birthMax);
+    survivalMinSlider.value(gameRules.survivalMin);
+    survivalMaxSlider.value(gameRules.survivalMax);
+
+    birthMinValue.html(gameRules.birthMin);
+    birthMaxValue.html(gameRules.birthMax);
+    survivalMinValue.html(gameRules.survivalMin);
+    survivalMaxValue.html(gameRules.survivalMax);
 }
 
 function draw() {
@@ -124,7 +251,7 @@ function mousePressed() {
             let gridPos = renderer.screenToGrid(mouseX, mouseY);
             if (gridPos) {
                 if (mouseButton === LEFT) {
-                    gridSystem.setCell(gridPos.x, gridPos.y, 1);
+                    gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
@@ -141,7 +268,7 @@ function mouseDragged() {
         let gridPos = renderer.screenToGrid(mouseX, mouseY);
         if (gridPos) {
             if (mouseButton === LEFT) {
-                gridSystem.setCell(gridPos.x, gridPos.y, 1);
+                gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
             }
