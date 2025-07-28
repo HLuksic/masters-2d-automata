@@ -14,7 +14,7 @@ class GridRenderer {
             case 'hex':
                 this.renderHexGrid(cellSize);
                 break;
-            case 'triangle':
+            case 'tri':
                 this.renderTriangleGrid(cellSize);
                 break;
         }
@@ -123,7 +123,7 @@ class GridRenderer {
         switch (this.grid.type) {
             case 'hex':
                 return this.screenToHexGrid(worldPos, cellSize);
-            case 'triangle':
+            case 'tri':
                 return this.screenToTriangleGrid(worldPos, cellSize);
         }
         return null;

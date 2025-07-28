@@ -81,12 +81,84 @@ class GridSystem {
         return neighbors;
     }
 
+    getTriangleNeighbors(x, y) {
+        let neighbors = [];
+
+        // All 12 neighbors that touch by side or point
+        let isEvenRow = y % 2 === 0;
+        let pointUp = x % 2 === 0;
+
+        if (isEvenRow) {
+            // Even rows (no horizontal offset)
+            if (pointUp) {
+                // Upward pointing triangle in even row
+                neighbors = [
+                    // Side neighbors (3)
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x - 1, y + 1], // bottom
+                    // Point neighbors (9)
+                    [x - 2, y], [x + 2, y], // far left, far right
+                    [x - 2, y - 1], [x - 1, y - 1], [x, y - 1], // top row
+                    [x - 2, y + 1], [x, y + 1], // bottom neighbors
+                    [x - 3, y + 1], [x + 1, y + 1] // far bottom neighbors
+                ];
+            } else {
+                // Downward pointing triangle in even row
+                neighbors = [
+                    // Side neighbors (3)
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x - 1, y - 1], // top
+                    // Point neighbors (9)
+                    [x - 2, y], [x + 2, y], // far left, far right
+                    [x - 2, y + 1], [x - 1, y + 1], [x, y + 1], // bottom row
+                    [x - 2, y - 1], [x, y - 1], // top neighbors
+                    [x - 3, y - 1], [x + 1, y - 1] // far top neighbors
+                ];
+            }
+        } else {
+            // Odd rows(horizontally offset)
+            if (pointUp) {
+                // Upward pointing triangle in odd row
+                neighbors = [
+                    // Side neighbors (3)
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x + 1, y + 1], // bottom
+                    // Point neighbors (9)
+                    [x - 2, y], [x + 2, y], // far left, far right
+                    [x, y - 1], [x + 1, y - 1], [x + 2, y - 1], // top row
+                    [x, y + 1], [x + 2, y + 1], // bottom neighbors
+                    [x - 1, y + 1], [x + 3, y + 1] // far bottom neighbors
+                ];
+            } else {
+                // Downward pointing triangle in odd row
+                neighbors = [
+                    // Side neighbors (3)
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x + 1, y - 1], // top
+                    // Point neighbors (9)
+                    [x - 2, y], [x + 2, y], // far left, far right
+                    [x, y + 1], [x + 1, y + 1], [x + 2, y + 1], // bottom row
+                    [x, y - 1], [x + 2, y - 1], // top neighbors
+                    [x - 1, y - 1], [x + 3, y - 1] // far top neighbors
+                ];
+            }
+        }
+
+        return neighbors;
+    }
+
     countLiveNeighbors(x, y) {
-        if (this.type !== 'hex') return 0;
+        let neighbors;
 
-        let neighbors = this.getHexNeighbors(x, y);
+        if (this.type === 'hex') {
+            neighbors = this.getHexNeighbors(x, y);
+        } else if (this.type === 'tri') {
+            neighbors = this.getTriangleNeighbors(x, y);
+        } else {
+            return 0;
+        }
+
         let count = 0;
-
         for (let [nx, ny] of neighbors) {
             if (this.getCell(nx, ny) === 1) {
                 count++;
@@ -97,8 +169,6 @@ class GridSystem {
     }
 
     step() {
-        if (this.type !== 'hex') return;
-
         let newGrid = this.createEmptyGrid();
 
         for (let y = 0; y < this.height; y++) {
@@ -106,22 +176,35 @@ class GridSystem {
                 let liveNeighbors = this.countLiveNeighbors(x, y);
                 let currentCell = this.getCell(x, y);
 
-                // Conway's rules adapted for hexagonal grid:
-                // - Live cell with 2-3 neighbors survives
-                // - Dead cell with exactly 2 neighbors becomes alive
-                if (currentCell === 1) {
-                    // Live cell
-                    if (liveNeighbors === 2 || liveNeighbors === 3) {
-                        newGrid[y][x] = 1; // Survives
+                if (this.type === 'hex') {
+                    // Hexagonal rules
+                    if (currentCell === 1) {
+                        if (liveNeighbors === 2 || liveNeighbors === 3) {
+                            newGrid[y][x] = 1;
+                        } else {
+                            newGrid[y][x] = 0;
+                        }
                     } else {
-                        newGrid[y][x] = 0; // Dies
+                        if (liveNeighbors === 2) {
+                            newGrid[y][x] = 1;
+                        } else {
+                            newGrid[y][x] = 0;
+                        }
                     }
-                } else {
-                    // Dead cell
-                    if (liveNeighbors === 2) {
-                        newGrid[y][x] = 1; // Becomes alive
+                } else if (this.type === 'tri') {
+                    // Triangular rules (adapted for 12 neighbors)
+                    if (currentCell === 1) {
+                        if (liveNeighbors >= 3 && liveNeighbors <= 5) {
+                            newGrid[y][x] = 1;
+                        } else {
+                            newGrid[y][x] = 0;
+                        }
                     } else {
-                        newGrid[y][x] = 0; // Stays dead
+                        if (liveNeighbors === 3 || liveNeighbors === 4) {
+                            newGrid[y][x] = 1;
+                        } else {
+                            newGrid[y][x] = 0;
+                        }
                     }
                 }
             }

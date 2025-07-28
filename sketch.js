@@ -56,7 +56,7 @@ function setupUI() {
 
     // Button events
     hexBtn.mousePressed(() => setGridType('hex', hexBtn));
-    triBtn.mousePressed(() => setGridType('triangle', triBtn));
+    triBtn.mousePressed(() => setGridType('tri', triBtn));
 
     playPauseBtn = select('#playPause');
     stepBtn = select('#stepBtn');
@@ -69,9 +69,7 @@ function setupUI() {
     });
 
     stepBtn.mousePressed(() => {
-        if (gridSystem.type === 'hex') {
-            gridSystem.step();
-        }
+        gridSystem.step();
     });
 
     clearBtn.mousePressed(() => {
@@ -91,8 +89,8 @@ function setGridType(type, activeBtn) {
 function draw() {
     background(240);
 
-    // Auto-step if playing and hexagonal
-    if (isPlaying && gridSystem.type === 'hex' && frameCount % 10 === 0) {
+    // Auto-step if playing
+    if (isPlaying && frameCount % 10 === 0) {
         gridSystem.step();
     }
 
