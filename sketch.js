@@ -333,7 +333,7 @@ function draw() {
         gridSystem.step();
     }
 
-    background(240);
+    background(150);
     renderer.render();
     needsRedraw = false;
 }

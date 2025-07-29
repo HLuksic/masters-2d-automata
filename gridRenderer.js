@@ -48,7 +48,7 @@ class GridRenderer {
             if (cellStages === 1) {
                 fill(0); // Always black when there's only 1 stage
             } else {
-                let intensity = map(cellValue, 1, cellStages, 100, 0);
+                let intensity = map(cellValue, 1, cellStages, 220, 0);
                 fill(intensity);
             }
             noStroke();
