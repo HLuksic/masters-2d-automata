@@ -147,20 +147,146 @@ class GridSystem {
         return neighbors;
     }
 
+    getHexNeighborsAtDistance(x, y, maxDistance) {
+        if (maxDistance === 1) {
+            // Use the existing working function for ring 1
+            return this.getHexNeighbors(x, y);
+        }
+
+        let allNeighbors = new Set();
+
+        // Add ring 1 neighbors
+        let ring1 = this.getHexNeighbors(x, y);
+        for (let neighbor of ring1) {
+            allNeighbors.add(`${neighbor[0]},${neighbor[1]}`);
+        }
+
+        if (maxDistance >= 2) {
+            // Add ring 2 neighbors (neighbors of ring 1 neighbors)
+            for (let [nx, ny] of ring1) {
+                let ring2FromThis = this.getHexNeighbors(nx, ny);
+                for (let [nx2, ny2] of ring2FromThis) {
+                    if (nx2 !== x || ny2 !== y) { // Don't include center
+                        allNeighbors.add(`${nx2},${ny2}`);
+                    }
+                }
+            }
+        }
+
+        if (maxDistance >= 3) {
+            // Add ring 3 neighbors
+            let ring2Array = Array.from(allNeighbors).map(coord => {
+                let [nx, ny] = coord.split(',').map(Number);
+                return [nx, ny];
+            }).filter(([nx, ny]) => {
+                return !ring1.some(([r1x, r1y]) => r1x === nx && r1y === ny);
+            });
+
+            for (let [nx, ny] of ring2Array) {
+                let ring3FromThis = this.getHexNeighbors(nx, ny);
+                for (let [nx3, ny3] of ring3FromThis) {
+                    if (nx3 !== x || ny3 !== y) {
+                        allNeighbors.add(`${nx3},${ny3}`);
+                    }
+                }
+            }
+        }
+
+        // Convert back to array format
+        return Array.from(allNeighbors).map(coord => {
+            let [nx, ny] = coord.split(',').map(Number);
+            return [nx, ny];
+        });
+    }
+
+    getTriangleNeighborsAtDistance(x, y, maxDistance) {
+        if (maxDistance === 1) {
+            // Use the existing working function for ring 1
+            return this.getTriangleNeighbors(x, y);
+        }
+
+        let allNeighbors = new Set();
+
+        // Add ring 1 neighbors
+        let ring1 = this.getTriangleNeighbors(x, y);
+        for (let neighbor of ring1) {
+            allNeighbors.add(`${neighbor[0]},${neighbor[1]}`);
+        }
+
+        if (maxDistance >= 2) {
+            // Add ring 2 neighbors
+            for (let [nx, ny] of ring1) {
+                let ring2FromThis = this.getTriangleNeighbors(nx, ny);
+                for (let [nx2, ny2] of ring2FromThis) {
+                    if (nx2 !== x || ny2 !== y) {
+                        allNeighbors.add(`${nx2},${ny2}`);
+                    }
+                }
+            }
+        }
+
+        if (maxDistance >= 3) {
+            // Add ring 3 neighbors
+            let ring2Array = Array.from(allNeighbors).map(coord => {
+                let [nx, ny] = coord.split(',').map(Number);
+                return [nx, ny];
+            }).filter(([nx, ny]) => {
+                return !ring1.some(([r1x, r1y]) => r1x === nx && r1y === ny);
+            });
+
+            for (let [nx, ny] of ring2Array) {
+                let ring3FromThis = this.getTriangleNeighbors(nx, ny);
+                for (let [nx3, ny3] of ring3FromThis) {
+                    if (nx3 !== x || ny3 !== y) {
+                        allNeighbors.add(`${nx3},${ny3}`);
+                    }
+                }
+            }
+        }
+
+        // Convert back to array format
+        return Array.from(allNeighbors).map(coord => {
+            let [nx, ny] = coord.split(',').map(Number);
+            return [nx, ny];
+        });
+    }
+
+    getNeighborsAtDistance(x, y, distance) {
+        if (this.type === 'hex') {
+            return this.getHexNeighborsAtDistance(x, y, distance);
+        } else if (this.type === 'triangle') {
+            return this.getTriangleNeighborsAtDistance(x, y, distance);
+        }
+        return [];
+    }
+
     isCellAlive(x, y) {
         return this.getCell(x, y) > 0;
     }
 
-    countLiveNeighbors(x, y) {
-        let neighbors;
+    // countLiveNeighbors(x, y) {
+    //     let neighbors;
 
-        if (this.type === 'hex') {
-            neighbors = this.getHexNeighbors(x, y);
-        } else if (this.type === 'tri') {
-            neighbors = this.getTriangleNeighbors(x, y);
-        } else {
-            return 0;
-        }
+    //     if (this.type === 'hex') {
+    //         neighbors = this.getHexNeighbors(x, y);
+    //     } else if (this.type === 'tri') {
+    //         neighbors = this.getTriangleNeighbors(x, y);
+    //     } else {
+    //         return 0;
+    //     }
+
+    //     let count = 0;
+    //     for (let [nx, ny] of neighbors) {
+    //         if (this.isCellAlive(nx, ny)) {
+    //             count++;
+    //         }
+    //     }
+
+    //     return count;
+    // }
+
+    countLiveNeighbors(x, y) {
+        let neighbors = this.getNeighborsAtDistance(x, y, neighborDistance);
 
         let count = 0;
         for (let [nx, ny] of neighbors) {

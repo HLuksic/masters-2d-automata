@@ -18,6 +18,10 @@ let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
 let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
 let cellStages = 1; // Number of stages before full death
 let cellStagesSlider, cellStagesValue;
+let ring1Radio, ring2Radio, ring3Radio, customRadio;
+let neighborDistanceSlider, neighborDistanceValue, customDistanceDiv;
+let neighborhoodType = 'ring1';
+let neighborDistance = 1;
 
 let gameRules = {
     birthMin: 2,
@@ -55,6 +59,14 @@ function setupUI() {
 
     hexBtn = select('#hexGrid');
     triBtn = select('#triGrid');
+
+    ring1Radio = select('#ring1');
+    ring2Radio = select('#ring2');
+    ring3Radio = select('#ring3');
+    customRadio = select('#custom');
+    neighborDistanceSlider = select('#neighborDistance');
+    neighborDistanceValue = select('#neighborDistanceValue');
+    customDistanceDiv = select('#customDistance');
 
     birthMinSlider = select('#birthMin');
     birthMaxSlider = select('#birthMax');
@@ -156,6 +168,93 @@ function setupUI() {
             survivalMinValue.html(gameRules.survivalMin);
         }
     });
+
+    // Neighborhood radio events
+    ring1Radio.mousePressed(() => {
+        neighborhoodType = 'ring1';
+        neighborDistance = 1;
+        customDistanceDiv.style('display', 'none');
+        updateNeighborhoodBounds();
+    });
+
+    ring2Radio.mousePressed(() => {
+        neighborhoodType = 'ring2';
+        neighborDistance = 2;
+        customDistanceDiv.style('display', 'none');
+        updateNeighborhoodBounds();
+    });
+
+    ring3Radio.mousePressed(() => {
+        neighborhoodType = 'ring3';
+        neighborDistance = 3;
+        customDistanceDiv.style('display', 'none');
+        updateNeighborhoodBounds();
+    });
+
+    customRadio.changed(() => {
+        if (customRadio.checked()) {
+            neighborhoodType = 'custom';
+            neighborDistance = parseInt(neighborDistanceSlider.value());
+            customDistanceDiv.style('display', 'block');
+            updateNeighborhoodBounds();
+        }
+    });
+
+    // Distance slider event
+    neighborDistanceSlider.input(() => {
+        neighborDistance = parseInt(neighborDistanceSlider.value());
+        neighborDistanceValue.html(neighborDistance);
+        updateNeighborhoodBounds();
+    });
+}
+
+function getMaxNeighborsForDistance(gridType, distance) {
+    if (gridType === 'hex') {
+        if (distance === 1) return 6;
+        if (distance === 2) return 18;
+        if (distance === 3) return 36;
+        // General formula for hex: 3 * distance * (distance + 1)
+        return 3 * distance * (distance + 1);
+    } else if (gridType === 'triangle') {
+        if (distance === 1) return 12;
+        if (distance === 2) return 30;
+        if (distance === 3) return 54;
+        // Approximate formula for triangle
+        return 12 * distance * distance;
+    }
+    return 0;
+}
+
+function updateNeighborhoodBounds() {
+    let maxNeighbors = getMaxNeighborsForDistance(gridSystem.type, neighborDistance);
+
+    // Update slider max values
+    birthMinSlider.attribute('max', maxNeighbors);
+    birthMaxSlider.attribute('max', maxNeighbors);
+    survivalMinSlider.attribute('max', maxNeighbors);
+    survivalMaxSlider.attribute('max', maxNeighbors);
+
+    // Clamp current values to new bounds
+    if (gameRules.birthMin > maxNeighbors) {
+        gameRules.birthMin = maxNeighbors;
+        birthMinSlider.value(gameRules.birthMin);
+        birthMinValue.html(gameRules.birthMin);
+    }
+    if (gameRules.birthMax > maxNeighbors) {
+        gameRules.birthMax = maxNeighbors;
+        birthMaxSlider.value(gameRules.birthMax);
+        birthMaxValue.html(gameRules.birthMax);
+    }
+    if (gameRules.survivalMin > maxNeighbors) {
+        gameRules.survivalMin = maxNeighbors;
+        survivalMinSlider.value(gameRules.survivalMin);
+        survivalMinValue.html(gameRules.survivalMin);
+    }
+    if (gameRules.survivalMax > maxNeighbors) {
+        gameRules.survivalMax = maxNeighbors;
+        survivalMaxSlider.value(gameRules.survivalMax);
+        survivalMaxValue.html(gameRules.survivalMax);
+    }
 }
 
 function updateSliderBounds() {
@@ -198,8 +297,8 @@ function setGridType(type, activeBtn) {
     triBtn.removeClass('active');
     activeBtn.addClass('active');
 
-    // Update slider bounds and set default rules
-    updateSliderBounds();
+    // Update neighborhood bounds
+    updateNeighborhoodBounds();
 
     if (type === 'hex') {
         // Default Conway rules for hex
@@ -228,12 +327,12 @@ function draw() {
     if ((!needsRedraw && !isPlaying) || frameCount % 5 !== 0) {
         return;
     }
-    
+
     // Auto-step if playing
     if (isPlaying) {
         gridSystem.step();
     }
-    
+
     background(240);
     renderer.render();
     needsRedraw = false;
@@ -263,6 +362,7 @@ function triggerRedraw() {
 function mousePressed() {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         if (spacePressed) {
+            cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
         } else {
             // Handle cell placement/erasure
@@ -283,6 +383,7 @@ function mousePressed() {
 function mouseDragged() {
     if (spacePressed && camera.isDragging) {
         camera.updateDrag(mouseX, mouseY);
+        triggerRedraw();
     } else if (!spacePressed) {
         // Continue placing/erasing cells while dragging
         let gridPos = renderer.screenToGrid(mouseX, mouseY);

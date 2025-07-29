@@ -19,7 +19,6 @@ class GridRenderer {
     }
 
     render() {
-        console.log("Rendering grid of type:", this.grid.type);
         this.camera.apply();
         let cellSize = this.calculateCellSize();
 
@@ -122,13 +121,13 @@ class GridRenderer {
 
     drawTriangle(centerX, centerY, width, height, pointUp) {
         if (pointUp) {
-            triangle(centerX, centerY - height * 0.5, 
-                    centerX - width * 0.5, centerY + height * 0.5,
-                    centerX + width * 0.5, centerY + height * 0.5);
+            triangle(centerX, centerY - height * 0.5,
+                centerX - width * 0.5, centerY + height * 0.5,
+                centerX + width * 0.5, centerY + height * 0.5);
         } else {
-            triangle(centerX, centerY + height * 0.5, 
-                    centerX - width * 0.5, centerY - height * 0.5,
-                    centerX + width * 0.5, centerY - height * 0.5);
+            triangle(centerX, centerY + height * 0.5,
+                centerX - width * 0.5, centerY - height * 0.5,
+                centerX + width * 0.5, centerY - height * 0.5);
         }
     }
 
@@ -153,9 +152,10 @@ class GridRenderer {
 
         let startX = -this.grid.width * hexWidth * 0.75 / 2;
         let startY = -this.grid.height * hexHeight / 2;
-
-        let approxX = Math.floor((worldPos.x - startX) / (hexWidth * 0.75));
-        let approxY = Math.floor((worldPos.y - startY) / hexHeight);
+        // Account for column offset
+        let offsetY = (Math.floor((worldPos.x - startX) / (hexWidth * 0.75)) % 2) * (hexHeight * 0.5);
+        let approxX = Math.round((worldPos.x - startX) / (hexWidth * 0.75));
+        let approxY = Math.round((worldPos.y - startY - offsetY) / hexHeight);
 
         if (approxX >= 0 && approxX < this.grid.width && approxY >= 0 && approxY < this.grid.height) {
             return { x: approxX, y: approxY };
@@ -164,17 +164,19 @@ class GridRenderer {
     }
 
     screenToTriangleGrid(worldPos, cellSize) {
-        let triHeight = cellSize * 0.866;
+        // check collision, account for flipped triangles by row, no offset
+        let triHeight = cellSize * 0.866; // sqrt(3)/2
         let triWidth = cellSize;
         let rowHeight = triHeight;
-
         let startX = -this.grid.width * triWidth * 0.5 / 2;
         let startY = -this.grid.height * rowHeight / 2;
-
         let approxX = Math.round((worldPos.x - startX) / (triWidth * 0.5));
         let approxY = Math.round((worldPos.y - startY) / rowHeight);
-
         if (approxX >= 0 && approxX < this.grid.width && approxY >= 0 && approxY < this.grid.height) {
+            // Adjust for row offset
+            if (approxY % 2 === 1) {
+                approxX = Math.floor(approxX - 0.5);
+            }
             return { x: approxX, y: approxY };
         }
         return null;
