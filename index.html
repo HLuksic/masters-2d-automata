@@ -13,58 +13,62 @@
 
 <body>
     <div id="controls">
-        <div class="control-group">
-            <label>Controls:</label>
-            <span>Left click: place | Right click: erase | Space + drag: pan | Mouse wheel: zoom</span>
+        <div id="grid-controls">
+            <div class="control-group">
+                <label>Controls:</label>
+                <span>Left click: place | Right click: erase | Space + drag: pan | Mouse wheel: zoom</span>
+            </div>
+    
+            <div class="control-group">
+                <label>Grid Width:</label>
+                <input type="range" id="gridWidth" min="10" max="200" value="50">
+                <span id="gridWidthValue">50</span>
+            </div>
+    
+            <div class="control-group">
+                <label>Grid Height:</label>
+                <input type="range" id="gridHeight" min="10" max="150" value="40">
+                <span id="gridHeightValue">40</span>
+            </div>
+    
+            <div class="control-group">
+                <label>Grid Type:</label>
+                <button id="hexGrid" class="active">Hexagonal</button>
+                <button id="triGrid">Triangular</button>
+            </div>
         </div>
-
-        <div class="control-group">
-            <label>Grid Width:</label>
-            <input type="range" id="gridWidth" min="10" max="200" value="50">
-            <span id="gridWidthValue">50</span>
-        </div>
-
-        <div class="control-group">
-            <label>Grid Height:</label>
-            <input type="range" id="gridHeight" min="10" max="150" value="40">
-            <span id="gridHeightValue">40</span>
-        </div>
-
-        <div class="control-group">
-            <label>Grid Type:</label>
-            <button id="hexGrid" class="active">Hexagonal</button>
-            <button id="triGrid">Triangular</button>
-        </div>
-
-        <div class="control-group">
-            <label>Simulation:</label>
-            <button id="playPause">Play</button>
-            <button id="stepBtn">Step</button>
-            <button id="clearBtn">Clear</button>
-        </div>
-
-        <div class="control-group">
-            <label>Birth rule:</label>
-            <input type="range" id="birthMin" min="0" max="12" value="2">
-            <span id="birthMinValue">2</span>
-            to
-            <input type="range" id="birthMax" min="0" max="12" value="2">
-            <span id="birthMaxValue">2</span>
-        </div>
-
-        <div class="control-group">
-            <label>Survival rule:</label>
-            <input type="range" id="survivalMin" min="0" max="12" value="2">
-            <span id="survivalMinValue">2</span>
-            to
-            <input type="range" id="survivalMax" min="0" max="12" value="3">
-            <span id="survivalMaxValue">3</span>
-        </div>
-
-        <div class="control-group">
-            <label>Cell stages:</label>
-            <input type="range" id="cellStages" min="1" max="10" value="1">
-            <span id="cellStagesValue">1</span>
+        
+        <div id="simulation-controls">
+            <div class="control-group">
+                <label>Simulation:</label>
+                <button id="playPause">Play</button>
+                <button id="stepBtn">Step</button>
+                <button id="clearBtn">Clear</button>
+            </div>
+    
+            <div class="control-group">
+                <label>Birth rule:</label>
+                <input type="range" id="birthMin" min="0" max="12" value="2">
+                <span id="birthMinValue">2</span>
+                to
+                <input type="range" id="birthMax" min="0" max="12" value="2">
+                <span id="birthMaxValue">2</span>
+            </div>
+    
+            <div class="control-group">
+                <label>Survival rule:</label>
+                <input type="range" id="survivalMin" min="0" max="12" value="2">
+                <span id="survivalMinValue">2</span>
+                to
+                <input type="range" id="survivalMax" min="0" max="12" value="3">
+                <span id="survivalMaxValue">3</span>
+            </div>
+    
+            <div class="control-group">
+                <label>Cell stages:</label>
+                <input type="range" id="cellStages" min="1" max="10" value="1">
+                <span id="cellStagesValue">1</span>
+            </div>
         </div>
     </div>
 

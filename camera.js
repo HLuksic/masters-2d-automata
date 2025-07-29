@@ -3,7 +3,7 @@ class Camera {
     constructor() {
         this.x = 0;
         this.y = 0;
-        this.zoom = 1;
+        this.zoom = 1.7;
         this.minZoom = 0.1;
         this.maxZoom = 5;
         this.isDragging = false;
