@@ -3,11 +3,24 @@ class GridRenderer {
     constructor(gridSystem, camera) {
         this.grid = gridSystem;
         this.camera = camera;
+        this.hexVertices = this.precomputeHexVertices();
+    }
+
+    precomputeHexVertices() {
+        let vertices = [];
+        for (let i = 0; i < 6; i++) {
+            let angle = i * PI / 3;
+            vertices.push({
+                x: cos(angle),
+                y: sin(angle)
+            });
+        }
+        return vertices;
     }
 
     render() {
+        console.log("Rendering grid of type:", this.grid.type);
         this.camera.apply();
-
         let cellSize = this.calculateCellSize();
 
         switch (this.grid.type) {
@@ -30,6 +43,8 @@ class GridRenderer {
     setCellColor(cellValue) {
         if (cellValue === 0) {
             fill(255); // Dead = white
+            stroke(150);
+            strokeWeight(0.5);
         } else {
             if (cellStages === 1) {
                 fill(0); // Always black when there's only 1 stage
@@ -37,6 +52,7 @@ class GridRenderer {
                 let intensity = map(cellValue, 1, cellStages, 100, 0);
                 fill(intensity);
             }
+            noStroke();
         }
     }
 
@@ -97,26 +113,23 @@ class GridRenderer {
     drawHexagon(centerX, centerY, radius) {
         beginShape();
         for (let i = 0; i < 6; i++) {
-            let angle = i * PI / 3;
-            let x = centerX + cos(angle) * radius;
-            let y = centerY + sin(angle) * radius;
+            let x = centerX + this.hexVertices[i].x * radius;
+            let y = centerY + this.hexVertices[i].y * radius;
             vertex(x, y);
         }
         endShape(CLOSE);
     }
 
     drawTriangle(centerX, centerY, width, height, pointUp) {
-        beginShape();
         if (pointUp) {
-            vertex(centerX, centerY - height * 0.5);
-            vertex(centerX - width * 0.5, centerY + height * 0.5);
-            vertex(centerX + width * 0.5, centerY + height * 0.5);
+            triangle(centerX, centerY - height * 0.5, 
+                    centerX - width * 0.5, centerY + height * 0.5,
+                    centerX + width * 0.5, centerY + height * 0.5);
         } else {
-            vertex(centerX, centerY + height * 0.5);
-            vertex(centerX - width * 0.5, centerY - height * 0.5);
-            vertex(centerX + width * 0.5, centerY - height * 0.5);
+            triangle(centerX, centerY + height * 0.5, 
+                    centerX - width * 0.5, centerY - height * 0.5,
+                    centerX + width * 0.5, centerY - height * 0.5);
         }
-        endShape(CLOSE);
     }
 
     // Convert screen coordinates to grid coordinates

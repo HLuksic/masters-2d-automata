@@ -11,6 +11,8 @@ let camera;
 let renderer;
 let spacePressed = false;
 let isPlaying = false;
+let needsRedraw = true;
+let lastGridState = null;
 let playPauseBtn, stepBtn, clearBtn;
 let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
 let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
@@ -33,6 +35,8 @@ function setup() {
     let canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
+
+    triggerRedraw();
 
     // Initialize systems
     gridSystem = new GridSystem();
@@ -70,12 +74,14 @@ function setupUI() {
         let value = gridWidthSlider.value();
         gridWidthValue.html(value);
         gridSystem.resize(parseInt(value), gridSystem.height);
+        triggerRedraw();
     });
 
     gridHeightSlider.input(() => {
         let value = gridHeightSlider.value();
         gridHeightValue.html(value);
         gridSystem.resize(gridSystem.width, parseInt(value));
+        triggerRedraw();
     });
 
     cellStagesSlider.input(() => {
@@ -99,10 +105,12 @@ function setupUI() {
 
     stepBtn.mousePressed(() => {
         gridSystem.step();
+        triggerRedraw();
     });
 
     clearBtn.mousePressed(() => {
         gridSystem.cells = gridSystem.createEmptyGrid();
+        triggerRedraw();
     });
 
     birthMinSlider.input(() => {
@@ -211,17 +219,24 @@ function setGridType(type, activeBtn) {
     birthMaxValue.html(gameRules.birthMax);
     survivalMinValue.html(gameRules.survivalMin);
     survivalMaxValue.html(gameRules.survivalMax);
+
+    triggerRedraw();
 }
 
 function draw() {
-    background(240);
-
+    // Only redraw if something has changed
+    if ((!needsRedraw && !isPlaying) || frameCount % 5 !== 0) {
+        return;
+    }
+    
     // Auto-step if playing
-    if (isPlaying && frameCount % 10 === 0) {
+    if (isPlaying) {
         gridSystem.step();
     }
-
+    
+    background(240);
     renderer.render();
+    needsRedraw = false;
 }
 
 // Keyboard events
@@ -240,11 +255,14 @@ function keyReleased() {
     }
 }
 
+function triggerRedraw() {
+    needsRedraw = true;
+}
+
 // Mouse interaction
 function mousePressed() {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         if (spacePressed) {
-            cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
         } else {
             // Handle cell placement/erasure
@@ -252,8 +270,10 @@ function mousePressed() {
             if (gridPos) {
                 if (mouseButton === LEFT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
+                    triggerRedraw();
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
+                    triggerRedraw();
                 }
             }
         }
@@ -269,8 +289,10 @@ function mouseDragged() {
         if (gridPos) {
             if (mouseButton === LEFT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
+                triggerRedraw();
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
+                triggerRedraw();
             }
         }
     }
@@ -287,6 +309,7 @@ function mouseWheel(event) {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         let zoomFactor = event.delta > 0 ? 0.9 : 1.1;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
+        needsRedraw = true;
         return false; // Prevent page scrolling
     }
 }
