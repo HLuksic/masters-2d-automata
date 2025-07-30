@@ -20,6 +20,12 @@
             </div>
 
             <div class="control-group">
+                <label>Outline:</label>
+                <input type="checkbox" id="showOutlines" checked>
+                <input type="color" id="outlineColor" value="#888888">
+            </div>
+
+            <div class="control-group">
                 <label>Grid Width:</label>
                 <input type="range" id="gridWidth" min="10" max="200" value="50">
                 <span id="gridWidthValue">50</span>
@@ -36,6 +42,7 @@
                 <button id="hexGrid" class="active">Hexagonal</button>
                 <button id="triGrid">Triangular</button>
             </div>
+
 
             <div class="control-group">
                 <label>Simulation:</label>
@@ -81,6 +88,12 @@
                 <label>Cell stages:</label>
                 <input type="range" id="cellStages" min="1" max="10" value="1">
                 <span id="cellStagesValue">1</span>
+            </div>
+
+            <div class="control-group">
+                <label>Colors:</label>
+                <input type="color" id="aliveColor" value="#000000">
+                <input type="color" id="deadColor" value="#dcdcdc">
             </div>
         </div>
     </div>

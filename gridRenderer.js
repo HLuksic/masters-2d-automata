@@ -39,19 +39,36 @@ class GridRenderer {
         return baseSize;
     }
 
+    lerpColor(color1, color2, amount) {
+        return [
+            lerp(color1[0], color2[0], amount),
+            lerp(color1[1], color2[1], amount),
+            lerp(color1[2], color2[2], amount)
+        ];
+    }
+
     setCellColor(cellValue) {
-        if (cellValue === 0) {
-            fill(255); // Dead = white
-            stroke(150);
-            strokeWeight(0.5);
+        if (showOutlines) {
+            stroke(outlineColor[0], outlineColor[1], outlineColor[2]);
+            strokeWeight(cellValue === 0 ? 0.5 : 0.3);
         } else {
-            if (cellStages === 1) {
-                fill(0); // Always black when there's only 1 stage
-            } else {
-                let intensity = map(cellValue, 1, cellStages, 220, 0);
-                fill(intensity);
-            }
             noStroke();
+        }
+
+        if (cellValue === 0) {
+            // Dead cell
+            fill(deadColor[0], deadColor[1], deadColor[2]);
+        } else {
+            // Living cell - interpolate between dead and alive colors based on stage
+            if (cellStages === 1) {
+                fill(aliveColor[0], aliveColor[1], aliveColor[2]);
+            } else {
+                let t = map(cellValue, 1, cellStages, 0, 1);
+                let r = lerp(deadColor[0], aliveColor[0], t);
+                let g = lerp(deadColor[1], aliveColor[1], t);
+                let b = lerp(deadColor[2], aliveColor[2], t);
+                fill(r, g, b);
+            }
         }
     }
 

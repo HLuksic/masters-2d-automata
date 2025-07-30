@@ -14,14 +14,19 @@ let isPlaying = false;
 let needsRedraw = true;
 let lastGridState = null;
 let playPauseBtn, stepBtn, clearBtn;
+let showOutline = true;
 let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
 let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
-let cellStages = 1; // Number of stages before full death
+let cellStages = 1; // Number of stages before death
 let cellStagesSlider, cellStagesValue;
 let ring1Radio, ring2Radio, ring3Radio;
 let neighborDistanceSlider, neighborDistanceValue;
 let neighborhoodType = 'ring1';
 let neighborDistance = 1;
+let deadColorPicker, aliveColorPicker, outlineColorPicker;
+let deadColor = [255, 255, 255];
+let aliveColor = [0, 0, 0];
+let outlineColor = [136, 136, 136];
 
 let gameRules = {
     birthMin: 2,
@@ -51,6 +56,13 @@ function setup() {
     setupUI();
 }
 
+function hexToRgb(hex) {
+    let r = parseInt(hex.slice(1, 3), 16);
+    let g = parseInt(hex.slice(3, 5), 16);
+    let b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
 function setupUI() {
     gridWidthSlider = select('#gridWidth');
     gridHeightSlider = select('#gridHeight');
@@ -78,6 +90,12 @@ function setupUI() {
 
     cellStagesSlider = select('#cellStages');
     cellStagesValue = select('#cellStagesValue');
+
+    deadColorPicker = select('#deadColor');
+    aliveColorPicker = select('#aliveColor');
+
+    outlineColorPicker = select('#outlineColor');
+    showOutlinesCheckbox = select('#showOutlines');
 
     // Slider events
     gridWidthSlider.input(() => {
@@ -191,6 +209,27 @@ function setupUI() {
         neighborDistance = parseInt(neighborDistanceSlider.value());
         neighborDistanceValue.html(neighborDistance);
         updateNeighborhoodBounds();
+    });
+
+    // Color picker events
+    deadColorPicker.input(() => {
+        deadColor = hexToRgb(deadColorPicker.value());
+        triggerRedraw();
+    });
+
+    aliveColorPicker.input(() => {
+        aliveColor = hexToRgb(aliveColorPicker.value());
+        triggerRedraw();
+    });
+
+    outlineColorPicker.input(() => {
+        outlineColor = hexToRgb(outlineColorPicker.value());
+        triggerRedraw();
+    });
+
+    showOutlinesCheckbox.changed(() => {
+        showOutlines = showOutlinesCheckbox.checked();
+        triggerRedraw();
     });
 }
 
