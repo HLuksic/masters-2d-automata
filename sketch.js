@@ -18,8 +18,8 @@ let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
 let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
 let cellStages = 1; // Number of stages before full death
 let cellStagesSlider, cellStagesValue;
-let ring1Radio, ring2Radio, ring3Radio, customRadio;
-let neighborDistanceSlider, neighborDistanceValue, customDistanceDiv;
+let ring1Radio, ring2Radio, ring3Radio;
+let neighborDistanceSlider, neighborDistanceValue;
 let neighborhoodType = 'ring1';
 let neighborDistance = 1;
 
@@ -63,10 +63,8 @@ function setupUI() {
     ring1Radio = select('#ring1');
     ring2Radio = select('#ring2');
     ring3Radio = select('#ring3');
-    customRadio = select('#custom');
     neighborDistanceSlider = select('#neighborDistance');
     neighborDistanceValue = select('#neighborDistanceValue');
-    customDistanceDiv = select('#customDistance');
 
     birthMinSlider = select('#birthMin');
     birthMaxSlider = select('#birthMax');
@@ -173,31 +171,19 @@ function setupUI() {
     ring1Radio.mousePressed(() => {
         neighborhoodType = 'ring1';
         neighborDistance = 1;
-        customDistanceDiv.style('display', 'none');
         updateNeighborhoodBounds();
     });
 
     ring2Radio.mousePressed(() => {
         neighborhoodType = 'ring2';
         neighborDistance = 2;
-        customDistanceDiv.style('display', 'none');
         updateNeighborhoodBounds();
     });
 
     ring3Radio.mousePressed(() => {
         neighborhoodType = 'ring3';
         neighborDistance = 3;
-        customDistanceDiv.style('display', 'none');
         updateNeighborhoodBounds();
-    });
-
-    customRadio.changed(() => {
-        if (customRadio.checked()) {
-            neighborhoodType = 'custom';
-            neighborDistance = parseInt(neighborDistanceSlider.value());
-            customDistanceDiv.style('display', 'block');
-            updateNeighborhoodBounds();
-        }
     });
 
     // Distance slider event
@@ -215,7 +201,7 @@ function getMaxNeighborsForDistance(gridType, distance) {
         if (distance === 3) return 36;
         // General formula for hex: 3 * distance * (distance + 1)
         return 3 * distance * (distance + 1);
-    } else if (gridType === 'triangle') {
+    } else if (gridType === 'tri') {
         if (distance === 1) return 12;
         if (distance === 2) return 30;
         if (distance === 3) return 54;

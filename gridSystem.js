@@ -254,7 +254,7 @@ class GridSystem {
     getNeighborsAtDistance(x, y, distance) {
         if (this.type === 'hex') {
             return this.getHexNeighborsAtDistance(x, y, distance);
-        } else if (this.type === 'triangle') {
+        } else if (this.type === 'tri') {
             return this.getTriangleNeighborsAtDistance(x, y, distance);
         }
         return [];
@@ -263,27 +263,6 @@ class GridSystem {
     isCellAlive(x, y) {
         return this.getCell(x, y) > 0;
     }
-
-    // countLiveNeighbors(x, y) {
-    //     let neighbors;
-
-    //     if (this.type === 'hex') {
-    //         neighbors = this.getHexNeighbors(x, y);
-    //     } else if (this.type === 'tri') {
-    //         neighbors = this.getTriangleNeighbors(x, y);
-    //     } else {
-    //         return 0;
-    //     }
-
-    //     let count = 0;
-    //     for (let [nx, ny] of neighbors) {
-    //         if (this.isCellAlive(nx, ny)) {
-    //             count++;
-    //         }
-    //     }
-
-    //     return count;
-    // }
 
     countLiveNeighbors(x, y) {
         let neighbors = this.getNeighborsAtDistance(x, y, neighborDistance);
