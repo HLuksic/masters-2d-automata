@@ -13,10 +13,13 @@
 
 <body>
     <div class="container">
-        <div id="history">
-            <h2>History</h2>
-            <ul id="historyList"></ul>
-            <button id="clearHistory">Clear</button>
+        <div id="savedStates">
+            <h2>Saved States</h2>
+            <div class="control-group">
+                <button id="clearStates">Clear</button>
+                <button id="saveState">Save</button>
+            </div>
+            <ul id="statesList"></ul>
         </div>
 
         <div id="controls">
@@ -115,9 +118,11 @@
     </div>
 
     <script src="sketch.js"></script>
+    <script src="interface.js"></script>
     <script src="gridRenderer.js"></script>
     <script src="gridSystem.js"></script>
     <script src="camera.js"></script>
+    <script src="saveSystem.js"></script>
 </body>
 
 </html>
