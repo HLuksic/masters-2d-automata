@@ -9,7 +9,7 @@ const WHITE = [255, 255, 255];
 let gridSystem;
 let camera;
 let renderer;
-let spacePressed = false;
+let controlPressed = false;
 let isPlaying = false;
 let needsRedraw = true;
 let lastGridState = null;
@@ -365,16 +365,16 @@ function draw() {
 
 // Keyboard events
 function keyPressed() {
-    if (key === ' ') {
+    if (keyCode === 17) {
         cursor('grab');
-        spacePressed = true;
+        controlPressed = true;
     }
 }
 
 function keyReleased() {
-    if (key === ' ') {
+    if (keyCode === 17) {
         cursor('default');
-        spacePressed = false;
+        controlPressed = false;
         camera.endDrag();
     }
 }
@@ -386,7 +386,7 @@ function triggerRedraw() {
 // Mouse interaction
 function mousePressed() {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-        if (spacePressed) {
+        if (controlPressed) {
             cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
         } else {
@@ -406,10 +406,10 @@ function mousePressed() {
 }
 
 function mouseDragged() {
-    if (spacePressed && camera.isDragging) {
+    if (controlPressed && camera.isDragging) {
         camera.updateDrag(mouseX, mouseY);
         triggerRedraw();
-    } else if (!spacePressed) {
+    } else if (!controlPressed) {
         // Continue placing/erasing cells while dragging
         let gridPos = renderer.screenToGrid(mouseX, mouseY);
         if (gridPos) {
@@ -425,7 +425,7 @@ function mouseDragged() {
 }
 
 function mouseReleased() {
-    if (spacePressed) {
+    if (controlPressed) {
         cursor('grab');
     }
     camera.endDrag();
