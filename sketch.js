@@ -17,12 +17,9 @@ let playPauseBtn, stepBtn, clearBtn;
 let showOutline = true;
 let birthMinSlider, birthMaxSlider, survivalMinSlider, survivalMaxSlider;
 let birthMinValue, birthMaxValue, survivalMinValue, survivalMaxValue;
-let cellStages = 1; // Number of stages before death
-let cellStagesSlider, cellStagesValue;
+let cellPhasesSlider, cellPhasesValue;
 let ring1Radio, ring2Radio, ring3Radio;
 let neighborDistanceSlider, neighborDistanceValue;
-let neighborhoodType = 'ring1';
-let neighborDistance = 1;
 let deadColorPicker, aliveColorPicker, outlineColorPicker;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
@@ -32,7 +29,9 @@ let gameRules = {
     birthMin: 2,
     birthMax: 2,
     survivalMin: 2,
-    survivalMax: 3
+    survivalMax: 3,
+    cellPhases: 1,
+    neighborDistance: 1,
 };
 
 // UI elements
@@ -88,8 +87,8 @@ function setupUI() {
     survivalMinValue = select('#survivalMinValue');
     survivalMaxValue = select('#survivalMaxValue');
 
-    cellStagesSlider = select('#cellStages');
-    cellStagesValue = select('#cellStagesValue');
+    cellPhasesSlider = select('#cellPhases');
+    cellPhasesValue = select('#cellPhasesValue');
 
     deadColorPicker = select('#deadColor');
     aliveColorPicker = select('#aliveColor');
@@ -112,9 +111,10 @@ function setupUI() {
         triggerRedraw();
     });
 
-    cellStagesSlider.input(() => {
-        cellStages = parseInt(cellStagesSlider.value());
-        cellStagesValue.html(cellStages);
+    cellPhasesSlider.input(() => {
+        gameRules.cellPhases = parseInt(cellPhasesSlider.value());
+        cellPhasesValue.html(gameRules.cellPhases);
+        updateRuleNotation();
     });
 
     // Button events
@@ -150,6 +150,7 @@ function setupUI() {
             birthMaxSlider.value(gameRules.birthMax);
             birthMaxValue.html(gameRules.birthMax);
         }
+        updateRuleNotation();
     });
 
     birthMaxSlider.input(() => {
@@ -161,6 +162,7 @@ function setupUI() {
             birthMinSlider.value(gameRules.birthMin);
             birthMinValue.html(gameRules.birthMin);
         }
+        updateRuleNotation();
     });
 
     survivalMinSlider.input(() => {
@@ -172,6 +174,7 @@ function setupUI() {
             survivalMaxSlider.value(gameRules.survivalMax);
             survivalMaxValue.html(gameRules.survivalMax);
         }
+        updateRuleNotation();
     });
 
     survivalMaxSlider.input(() => {
@@ -183,48 +186,53 @@ function setupUI() {
             survivalMinSlider.value(gameRules.survivalMin);
             survivalMinValue.html(gameRules.survivalMin);
         }
+        updateRuleNotation();
     });
 
     // Neighborhood radio events
     ring1Radio.mousePressed(() => {
-        neighborhoodType = 'ring1';
-        neighborDistance = 1;
+        gameRules.neighborDistance = 1;
         updateNeighborhoodBounds();
+        updateRuleNotation();
     });
 
     ring2Radio.mousePressed(() => {
-        neighborhoodType = 'ring2';
-        neighborDistance = 2;
+        gameRules.neighborDistance = 2;
         updateNeighborhoodBounds();
+        updateRuleNotation();
     });
 
     ring3Radio.mousePressed(() => {
-        neighborhoodType = 'ring3';
-        neighborDistance = 3;
+        gameRules.neighborDistance = 3;
         updateNeighborhoodBounds();
+        updateRuleNotation();
     });
 
     // Distance slider event
     neighborDistanceSlider.input(() => {
-        neighborDistance = parseInt(neighborDistanceSlider.value());
-        neighborDistanceValue.html(neighborDistance);
+        gameRules.neighborDistance = parseInt(neighborDistanceSlider.value());
+        neighborDistanceValue.html(gameRules.neighborDistance);
         updateNeighborhoodBounds();
+        updateRuleNotation();
     });
 
     // Color picker events
     deadColorPicker.input(() => {
         deadColor = hexToRgb(deadColorPicker.value());
         triggerRedraw();
+        updateRuleNotation();
     });
 
     aliveColorPicker.input(() => {
         aliveColor = hexToRgb(aliveColorPicker.value());
         triggerRedraw();
+        updateRuleNotation();
     });
 
     outlineColorPicker.input(() => {
         outlineColor = hexToRgb(outlineColorPicker.value());
         triggerRedraw();
+        updateRuleNotation();
     });
 
     showOutlinesCheckbox.changed(() => {
@@ -238,20 +246,29 @@ function getMaxNeighborsForDistance(gridType, distance) {
         if (distance === 1) return 6;
         if (distance === 2) return 18;
         if (distance === 3) return 36;
-        // General formula for hex: 3 * distance * (distance + 1)
-        return 3 * distance * (distance + 1);
     } else if (gridType === 'tri') {
         if (distance === 1) return 12;
         if (distance === 2) return 30;
         if (distance === 3) return 54;
-        // Approximate formula for triangle
-        return 12 * distance * distance;
     }
     return 0;
 }
 
+function colorToHex(color) {
+    return `#${color[0].toString(16).padStart(2, '0')}${color[1].toString(16).padStart(2, '0')}${color[2].toString(16).padStart(2, '0')}`;
+}
+
+function updateRuleNotation() {
+    let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
+    let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
+        gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
+    let notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}/A${colorToHex(aliveColor)}/D${colorToHex(deadColor)}/O${colorToHex(outlineColor)}`;
+
+    select('#ruleCode').value(notation);
+}
+
 function updateNeighborhoodBounds() {
-    let maxNeighbors = getMaxNeighborsForDistance(gridSystem.type, neighborDistance);
+    let maxNeighbors = getMaxNeighborsForDistance(gridSystem.type, gameRules.neighborDistance);
 
     // Update slider max values
     birthMinSlider.attribute('max', maxNeighbors);
@@ -322,16 +339,9 @@ function setGridType(type, activeBtn) {
     triBtn.removeClass('active');
     activeBtn.addClass('active');
 
-    // Update neighborhood bounds
+    // Update bounds
     updateNeighborhoodBounds();
-
-    if (type === 'hex') {
-        // Default Conway rules for hex
-        gameRules = { birthMin: 2, birthMax: 2, survivalMin: 2, survivalMax: 3 };
-    } else if (type === 'tri') {
-        // Default rules for tri
-        gameRules = { birthMin: 3, birthMax: 4, survivalMin: 3, survivalMax: 5 };
-    }
+    updateSliderBounds();
 
     // Update UI to reflect new rules
     birthMinSlider.value(gameRules.birthMin);
@@ -344,6 +354,7 @@ function setGridType(type, activeBtn) {
     survivalMinValue.html(gameRules.survivalMin);
     survivalMaxValue.html(gameRules.survivalMax);
 
+    updateRuleNotation();
     triggerRedraw();
 }
 
@@ -394,7 +405,7 @@ function mousePressed() {
             let gridPos = renderer.screenToGrid(mouseX, mouseY);
             if (gridPos) {
                 if (mouseButton === LEFT) {
-                    gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
+                    gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
                     triggerRedraw();
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
@@ -414,7 +425,7 @@ function mouseDragged() {
         let gridPos = renderer.screenToGrid(mouseX, mouseY);
         if (gridPos) {
             if (mouseButton === LEFT) {
-                gridSystem.setCell(gridPos.x, gridPos.y, cellStages);
+                gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
                 triggerRedraw();
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);

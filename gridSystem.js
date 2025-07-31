@@ -265,7 +265,7 @@ class GridSystem {
     }
 
     countLiveNeighbors(x, y) {
-        let neighbors = this.getNeighborsAtDistance(x, y, neighborDistance);
+        let neighbors = this.getNeighborsAtDistance(x, y, gameRules.neighborDistance);
 
         let count = 0;
         for (let [nx, ny] of neighbors) {
@@ -290,7 +290,7 @@ class GridSystem {
                     // Live cell - check survival rules
                     if (liveNeighbors >= gameRules.survivalMin && liveNeighbors <= gameRules.survivalMax) {
                         // Cell survives - reset to full life
-                        newGrid[y][x] = cellStages;
+                        newGrid[y][x] = gameRules.cellPhases;
                     } else {
                         // Cell should die - decrease stage
                         newGrid[y][x] = Math.max(0, currentCell - 1);
@@ -299,7 +299,7 @@ class GridSystem {
                     // Dead cell - check birth rules
                     if (liveNeighbors >= gameRules.birthMin && liveNeighbors <= gameRules.birthMax) {
                         // Cell is born
-                        newGrid[y][x] = cellStages;
+                        newGrid[y][x] = gameRules.cellPhases;
                     } else {
                         // Cell stays dead
                         newGrid[y][x] = 0;

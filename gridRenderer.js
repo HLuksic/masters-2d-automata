@@ -59,11 +59,11 @@ class GridRenderer {
             // Dead cell
             fill(deadColor[0], deadColor[1], deadColor[2]);
         } else {
-            // Living cell - interpolate between dead and alive colors based on stage
-            if (cellStages === 1) {
+            // Living cell - interpolate between dead and alive colors based on phase
+            if (gameRules.cellPhases === 1) {
                 fill(aliveColor[0], aliveColor[1], aliveColor[2]);
             } else {
-                let t = map(cellValue, 1, cellStages, 0, 1);
+                let t = map(cellValue, 0, gameRules.cellPhases, 0, 1);
                 let r = lerp(deadColor[0], aliveColor[0], t);
                 let g = lerp(deadColor[1], aliveColor[1], t);
                 let b = lerp(deadColor[2], aliveColor[2], t);
