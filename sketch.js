@@ -1,6 +1,6 @@
 // Global constants
-const CANVAS_WIDTH = 1500;
-const CANVAS_HEIGHT = 1000;
+const CANVAS_WIDTH = 1700;
+const CANVAS_HEIGHT = 900;
 const BLACK = [0, 0, 0];
 const GREY = [128, 128, 128];
 const WHITE = [255, 255, 255];
