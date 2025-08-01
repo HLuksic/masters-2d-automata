@@ -5,9 +5,9 @@ class SaveSystem {
         this.gridSystem = gridSystem;
     }
 
-    saveState(notation) {
+    saveState(name, notation) {
         // Capture canvas image
-        let canvasImage = canvas.toDataURL('image/png');
+        let canvasImage = canvas.toDataURL('image/webp', 0.1);
 
         // Create state object
         let state = {
@@ -48,10 +48,20 @@ class SaveSystem {
         }
     }
 
-    deleteState(notation) {
+    deleteAllStates() {
+        try {
+            localStorage.removeItem(this.storageKey);
+            return true;
+        } catch (error) {
+            console.error('Failed to clear states:', error);
+            return false;
+        }
+    }
+
+    deleteState(name) {
         let states = this.getAllStates();
-        if (states[notation]) {
-            delete states[notation];
+        if (states[name]) {
+            delete states[name];
             localStorage.setItem(this.storageKey, JSON.stringify(states));
             return true;
         }
@@ -59,17 +69,6 @@ class SaveSystem {
     }
 
     loadStateList() {
-        // add cards like this to html and fill them with data
-        // <ul id="statesList">
-        //         <div id="stateCard">
-        //             <h4>Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888</h4>
-        //             <p>Created: 2023-10-01 12:00</p>
-        //             <img src="placeholder.png" alt="State Image">
-        //             <button class="loadState">Load</button>
-        //             <button class="deleteState">Delete</button>
-        //         </div>
-        //     </ul>
-
         let states = this.getAllStates();
         let statesList = document.getElementById('statesList');
         statesList.innerHTML = ''; // Clear existing list
@@ -83,12 +82,13 @@ class SaveSystem {
             let card = document.createElement('div');
             card.id = 'stateCard';
             card.innerHTML = `
-                <h4>${notation}</h4>
+                <h4>${key}</h4>
+                <p>Notation: ${notation}</p>
                 <p>Created: ${formattedDate}</p>
                 <img src="${state.image}" alt="State Image">
                 <div class="control-group">
-                    <button class="loadState" data-notation="${notation}">Load</button>
-                    <button class="deleteState" data-notation="${notation}">Delete</button>
+                    <button class="loadState" data-name="${key}">Load</button>
+                    <button class="deleteState" data-name="${key}">Delete</button>
                 </div>
             `;
             statesList.appendChild(card);
@@ -116,50 +116,20 @@ class SaveSystem {
 
         deleteButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                let notation = e.target.getAttribute('data-notation');
-                if (this.deleteState(notation)) {
+                let name = e.target.getAttribute('data-name');
+                if (this.deleteState(name)) {
                     this.loadStateList(); // Refresh the list
                 } else {
-                    console.error('Failed to delete state:', notation);
+                    console.error('Failed to delete state:', name);
                 }
             });
         });
     }
 
-    applyState(state, gridSystem, camera) {
+    applyState(state, gridSystem) {
         if (!state) return false;
 
-        try {
-            // Apply grid settings
-            gridSystem.setType(state.gridType);
-            gridSystem.resize(state.gridWidth, state.gridHeight);
-            gridSystem.cells = JSON.parse(JSON.stringify(state.cells)); // Deep copy
 
-            // Apply game rules
-            Object.assign(gameRules, state.gameRules);
-
-            // Apply other settings
-            cellStages = state.cellStages;
-            neighborhoodType = state.neighborhoodType;
-            neighborDistance = state.neighborDistance;
-
-            // Apply colors
-            deadColor = [...state.colors.dead];
-            aliveColor = [...state.colors.alive];
-            outlineColor = [...state.colors.outline];
-            showOutlines = state.colors.showOutlines;
-
-            // Update UI to reflect loaded state
-            this.updateUIFromState(state);
-
-            // Trigger redraw
-            triggerRedraw();
-
-            return true;
-        } catch (error) {
-            console.error('Failed to apply state:', error);
-            return false;
-        }
     }
 
     updateUIFromState(state) {

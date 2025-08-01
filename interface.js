@@ -29,7 +29,6 @@ class Interface {
         this.aliveColorPicker = null;
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
-        this.clearHistoryBtn = null;
         this.showOutline = true;
         this.deadColor = [255, 255, 255];
         this.aliveColor = [0, 0, 0];
@@ -213,13 +212,14 @@ class Interface {
         });
 
         this.saveStateBtn.mousePressed(() => {
-            this.saveSystem.saveState();
-            alert('State saved successfully!');
+            let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
+            this.saveSystem.saveState(name, this.notation);
+            this.saveSystem.loadStateList();
         });
 
         this.clearStatesBtn.mousePressed(() => {
-            select('#statesList').html('');
-            alert('States cleared!');
+            confirm('Are you sure you want to clear all saved states?') && this.saveSystem.deleteAllStates();
+            this.saveSystem.loadStateList();
         });
     }
 
