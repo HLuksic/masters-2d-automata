@@ -1,19 +1,18 @@
 // Add this new SaveSystem class
 class SaveSystem {
-    constructor(gridSystem, ui) {
+    constructor(gridSystem) {
         this.storageKey = 'cellularAutomataStates';
         this.gridSystem = gridSystem;
-        this.ui = ui;
     }
 
-    saveState() {
+    saveState(notation) {
         // Capture canvas image
         let canvasImage = canvas.toDataURL('image/png');
 
         // Create state object
         let state = {
             timestamp: Date.now(),
-            notation: this.ui.notation,
+            notation: notation,
             cells: JSON.parse(JSON.stringify(this.gridSystem.cells)), // Deep copy
             image: canvasImage
         };
@@ -59,24 +58,72 @@ class SaveSystem {
         return false;
     }
 
-    generateNotation(gridSystem, gameRules, cellStages, neighborhoodType, neighborDistance) {
-        let gridTypeChar = gridSystem.type === 'hex' ? 'H' : 'T';
-        let neighborChar = neighborhoodType === 'ring1' ? '1' :
-            neighborhoodType === 'ring2' ? '2' :
-                neighborhoodType === 'ring3' ? '3' :
-                    neighborDistance.toString();
+    loadStateList() {
+        // add cards like this to html and fill them with data
+        // <ul id="statesList">
+        //         <div id="stateCard">
+        //             <h4>Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888</h4>
+        //             <p>Created: 2023-10-01 12:00</p>
+        //             <img src="placeholder.png" alt="State Image">
+        //             <button class="loadState">Load</button>
+        //             <button class="deleteState">Delete</button>
+        //         </div>
+        //     </ul>
 
-        let birthRule = gameRules.birthMin === gameRules.birthMax ?
-            gameRules.birthMin.toString() :
-            `${gameRules.birthMin}-${gameRules.birthMax}`;
+        let states = this.getAllStates();
+        let statesList = document.getElementById('statesList');
+        statesList.innerHTML = ''; // Clear existing list
 
-        let survivalRule = gameRules.survivalMin === gameRules.survivalMax ?
-            gameRules.survivalMin.toString() :
-            `${gameRules.survivalMin}-${gameRules.survivalMax}`;
+        for (let key in states) {
+            let state = states[key];
+            let notation = state.notation;
+            let date = new Date(state.timestamp);
+            let formattedDate = date.toLocaleString();
 
-        let stageChar = cellStages > 1 ? `S${cellStages}` : '';
+            let card = document.createElement('div');
+            card.id = 'stateCard';
+            card.innerHTML = `
+                <h4>${notation}</h4>
+                <p>Created: ${formattedDate}</p>
+                <img src="${state.image}" alt="State Image">
+                <div class="control-group">
+                    <button class="loadState" data-notation="${notation}">Load</button>
+                    <button class="deleteState" data-notation="${notation}">Delete</button>
+                </div>
+            `;
+            statesList.appendChild(card);
+        }
 
-        return `${gridTypeChar}${neighborChar}/B${birthRule}/S${survivalRule}${stageChar}`;
+        // Add event listeners for load and delete buttons
+        this.addStateEventListeners();
+    }
+
+    addStateEventListeners() {
+        let loadButtons = document.querySelectorAll('.loadState');
+        let deleteButtons = document.querySelectorAll('.deleteState');
+
+        loadButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                let notation = e.target.getAttribute('data-notation');
+                let state = this.loadState(notation);
+                if (state) {
+                    this.applyState(state, gridSystem, camera);
+                } else {
+                    console.error('State not found:', notation);
+                }
+            });
+        });
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                let notation = e.target.getAttribute('data-notation');
+                if (this.deleteState(notation)) {
+                    this.loadStateList(); // Refresh the list
+                } else {
+                    console.error('Failed to delete state:', notation);
+                }
+            });
+        });
     }
 
     applyState(state, gridSystem, camera) {
@@ -171,39 +218,5 @@ class SaveSystem {
             const hex = Math.round(x).toString(16);
             return hex.length === 1 ? "0" + hex : hex;
         }).join('');
-    }
-
-    exportState(name) {
-        let state = this.loadState(name);
-        if (state) {
-            let dataStr = JSON.stringify(state, null, 2);
-            let dataBlob = new Blob([dataStr], { type: 'application/json' });
-
-            let link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `${name}.json`;
-            link.click();
-        }
-    }
-
-    importState(fileInput) {
-        return new Promise((resolve, reject) => {
-            let file = fileInput.files[0];
-            if (!file) {
-                reject('No file selected');
-                return;
-            }
-
-            let reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    let state = JSON.parse(e.target.result);
-                    resolve(state);
-                } catch (error) {
-                    reject('Invalid file format');
-                }
-            };
-            reader.readAsText(file);
-        });
     }
 }
