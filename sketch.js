@@ -11,6 +11,9 @@ let interface;
 let controlPressed = false;
 let isPlaying = false;
 let needsRedraw = true;
+let deadColor = [255, 255, 255];
+let aliveColor = [0, 0, 0];
+let outlineColor = [136, 136, 136];
 
 let gameRules = {
     birthMin: 2,

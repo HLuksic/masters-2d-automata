@@ -1,4 +1,3 @@
-// Add this new SaveSystem class
 class SaveSystem {
     constructor(gridSystem) {
         this.storageKey = 'cellularAutomataStates';
@@ -82,8 +81,8 @@ class SaveSystem {
             let card = document.createElement('div');
             card.id = 'stateCard';
             card.innerHTML = `
-                <h4>${key}</h4>
-                <p>Notation: ${notation}</p>
+                <h3>${key}</h3>
+                <p data-notation="${notation}">${notation}</p>
                 <p>Created: ${formattedDate}</p>
                 <img src="${state.image}" alt="State Image">
                 <div class="control-group">
@@ -104,13 +103,14 @@ class SaveSystem {
 
         loadButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                let notation = e.target.getAttribute('data-notation');
-                let state = this.loadState(notation);
+                let name = e.target.getAttribute('data-name');
+                let state = this.loadState(name);
                 if (state) {
-                    this.applyState(state, gridSystem, camera);
+                    this.applyState(state);
                 } else {
-                    console.error('State not found:', notation);
+                    console.error('Failed to load state:', name);
                 }
+                e.stopPropagation(); // Prevent card click event
             });
         });
 
@@ -126,10 +126,35 @@ class SaveSystem {
         });
     }
 
-    applyState(state, gridSystem) {
+    applyState(state) {
         if (!state) return false;
 
+        // Parse notation and set values: Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888 G - grid type, R - ring value, P - phases, B - birth, S - survival, A - alive color, D - dead color, O - outline color
+        let notationParts = state.notation.split('/');
+        if (notationParts.length < 6) {
+            console.error('Invalid notation format:', state.notation);
+            return false;
+        }
+        // Remove first char from each part
+        notationParts = notationParts.map(part => part.substring(1));
 
+        this.gridSystem.setGridType(notationParts[0]);
+        gameRules.neighborDistance = parseInt(notationParts[1]);
+        gameRules.cellPhases = parseInt(notationParts[2]);
+        gameRules.birthMin = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[0] : notationParts[3]);
+        gameRules.birthMax = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[1] : notationParts[3]);
+        gameRules.survivalMin = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[0] : notationParts[4]);
+        gameRules.survivalMax = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[1] : notationParts[4]);
+        aliveColor = this.hexToRgb(notationParts[5]);
+        deadColor = this.hexToRgb(notationParts[6]);
+        outlineColor = this.hexToRgb(notationParts[7]);
+
+        // console.log(deadColor)
+
+        // print all
+        // console.log('Applying state with values:', {
+        //     notationParts
+        // });
     }
 
     updateUIFromState(state) {
@@ -183,10 +208,12 @@ class SaveSystem {
         showOutlinesCheckbox.checked(state.colors.showOutlines);
     }
 
-    rgbToHex(rgb) {
-        return "#" + rgb.map(x => {
-            const hex = Math.round(x).toString(16);
-            return hex.length === 1 ? "0" + hex : hex;
-        }).join('');
+    hexToRgb(hex) {
+        let bigint = parseInt(hex.slice(1), 16);
+        return [
+            (bigint >> 16) & 255,
+            (bigint >> 8) & 255,
+            bigint & 255
+        ];
     }
 }

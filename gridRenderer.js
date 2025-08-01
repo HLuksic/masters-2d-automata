@@ -1,4 +1,3 @@
-// Renderer for different grid types
 class GridRenderer {
     constructor(gridSystem, camera, ui) {
         this.grid = gridSystem;
@@ -50,7 +49,7 @@ class GridRenderer {
 
     setCellColor(cellValue) {
         if (ui.showOutline) {
-            stroke(ui.outlineColor[0], ui.outlineColor[1], ui.outlineColor[2]);
+            stroke(outlineColor[0], outlineColor[1], outlineColor[2]);
             strokeWeight(cellValue === 0 ? 0.5 : 0.3);
         } else {
             noStroke();
@@ -58,16 +57,16 @@ class GridRenderer {
 
         if (cellValue === 0) {
             // Dead cell
-            fill(ui.deadColor[0], ui.deadColor[1], ui.deadColor[2]);
+            fill(deadColor[0], deadColor[1], deadColor[2]);
         } else {
             // Living cell - interpolate between dead and alive colors based on phase
             if (gameRules.cellPhases === 1) {
-                fill(ui.aliveColor[0], ui.aliveColor[1], ui.aliveColor[2]);
+                fill(aliveColor[0], aliveColor[1], aliveColor[2]);
             } else {
                 let t = map(cellValue, 0, gameRules.cellPhases, 0, 1);
-                let r = lerp(ui.deadColor[0], ui.aliveColor[0], t);
-                let g = lerp(ui.deadColor[1], ui.aliveColor[1], t);
-                let b = lerp(ui.deadColor[2], ui.aliveColor[2], t);
+                let r = lerp(deadColor[0], aliveColor[0], t);
+                let g = lerp(deadColor[1], aliveColor[1], t);
+                let b = lerp(deadColor[2], aliveColor[2], t);
                 fill(r, g, b);
             }
         }

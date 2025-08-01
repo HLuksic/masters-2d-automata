@@ -1,4 +1,3 @@
-// Camera system for zooming and panning
 class Camera {
     constructor() {
         this.x = 0;

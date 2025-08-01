@@ -1,4 +1,3 @@
-// Grid system
 class GridSystem {
     constructor() {
         this.width = 50;

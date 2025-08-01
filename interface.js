@@ -1,6 +1,5 @@
 class Interface {
     constructor(saveSystem) {
-        // UI elements
         this.gridWidthSlider = null;
         this.gridHeightSlider = null;
         this.gridWidthValue = null;
@@ -30,9 +29,7 @@ class Interface {
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
         this.showOutline = true;
-        this.deadColor = [255, 255, 255];
-        this.aliveColor = [0, 0, 0];
-        this.outlineColor = [136, 136, 136];
+
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
         this.saveSystem = saveSystem;
 
@@ -189,19 +186,19 @@ class Interface {
         });
 
         this.deadColorPicker.input(() => {
-            this.deadColor = this.hexToRgb(this.deadColorPicker.value());
+            deadColor = this.hexToRgb(this.deadColorPicker.value());
             triggerRedraw();
             this.updateRuleNotation();
         });
 
         this.aliveColorPicker.input(() => {
-            this.aliveColor = this.hexToRgb(this.aliveColorPicker.value());
+            aliveColor = this.hexToRgb(this.aliveColorPicker.value());
             triggerRedraw();
             this.updateRuleNotation();
         });
 
         this.outlineColorPicker.input(() => {
-            this.outlineColor = this.hexToRgb(this.outlineColorPicker.value());
+            outlineColor = this.hexToRgb(this.outlineColorPicker.value());
             triggerRedraw();
             this.updateRuleNotation();
         });
@@ -212,7 +209,18 @@ class Interface {
         });
 
         this.saveStateBtn.mousePressed(() => {
-            let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
+            let name = prompt('Name:', `State ${new Date().toLocaleString()}`); // if user cancels, dont save
+            if (!name) return;
+            if (name.trim() === '') {
+                alert('Name cannot be empty');
+                return;
+            }
+            name = name.trim();
+            // if (this.saveSystem.stateExists(name)) {
+            //     if (!confirm(`State "${name}" already exists. Overwrite?`)) {
+            //         return;
+            //     }
+            // }
             this.saveSystem.saveState(name, this.notation);
             this.saveSystem.loadStateList();
         });
@@ -224,13 +232,15 @@ class Interface {
     }
 
     hexToRgb(hex) {
-        let r = parseInt(hex.slice(1, 3), 16);
-        let g = parseInt(hex.slice(3, 5), 16);
-        let b = parseInt(hex.slice(5, 7), 16);
-        return [r, g, b];
+        let bigint = parseInt(hex.slice(1), 16);
+        return [
+            (bigint >> 16) & 255,
+            (bigint >> 8) & 255,
+            bigint & 255
+        ];
     }
 
-    colorToHex(color) {
+    rgbToHex(color) {
         return `#${color[0].toString(16).padStart(2, '0')}${color[1].toString(16).padStart(2, '0')}${color[2].toString(16).padStart(2, '0')}`;
     }
 
@@ -238,7 +248,7 @@ class Interface {
         let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
         let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
             gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
-        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}/A${this.colorToHex(this.aliveColor)}/D${this.colorToHex(this.deadColor)}/O${this.colorToHex(this.outlineColor)}`;
+        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
 
         select('#ruleCode').value(this.notation);
     }
