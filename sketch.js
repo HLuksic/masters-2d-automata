@@ -1,9 +1,6 @@
 // Global constants
 const CANVAS_WIDTH = 1700;
 const CANVAS_HEIGHT = 900;
-const BLACK = [0, 0, 0];
-const GREY = [128, 128, 128];
-const WHITE = [255, 255, 255];
 
 // Global variables
 let gridSystem;
@@ -32,11 +29,10 @@ function setup() {
     triggerRedraw();
 
     // Initialize systems
-    ui = new Interface();
     gridSystem = new GridSystem();
+    ui = new Interface(gridSystem);
     camera = new Camera();
     renderer = new GridRenderer(gridSystem, camera, ui);
-    saveSystem = new SaveSystem();
 }
 
 function draw() {

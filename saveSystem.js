@@ -1,31 +1,20 @@
 // Add this new SaveSystem class
 class SaveSystem {
-    constructor(gridSystem) {
+    constructor(gridSystem, ui) {
         this.storageKey = 'cellularAutomataStates';
         this.gridSystem = gridSystem;
+        this.ui = ui;
     }
 
-    saveState(name, gameRules, cellStages, neighborhoodType, neighborDistance, deadColor, aliveColor, outlineColor, showOutlines) {
+    saveState() {
         // Capture canvas image
         let canvasImage = canvas.toDataURL('image/png');
 
         // Create state object
         let state = {
-            name: name,
             timestamp: Date.now(),
-            notation: notation,
-            gridType: gridSystem.type,
-            cells: JSON.parse(JSON.stringify(gridSystem.cells)), // Deep copy
-            gameRules: { ...gameRules },
-            cellStages: cellStages,
-            neighborhoodType: neighborhoodType,
-            neighborDistance: neighborDistance,
-            colors: {
-                dead: [...deadColor],
-                alive: [...aliveColor],
-                outline: [...outlineColor],
-                showOutlines: showOutlines
-            },
+            notation: this.ui.notation,
+            cells: JSON.parse(JSON.stringify(this.gridSystem.cells)), // Deep copy
             image: canvasImage
         };
 
@@ -45,9 +34,9 @@ class SaveSystem {
         }
     }
 
-    loadState(name) {
+    loadState(notation) {
         let states = this.getAllStates();
-        return states[name] || null;
+        return states[notation] || null;
     }
 
     getAllStates() {
@@ -60,10 +49,10 @@ class SaveSystem {
         }
     }
 
-    deleteState(name) {
+    deleteState(notation) {
         let states = this.getAllStates();
-        if (states[name]) {
-            delete states[name];
+        if (states[notation]) {
+            delete states[notation];
             localStorage.setItem(this.storageKey, JSON.stringify(states));
             return true;
         }

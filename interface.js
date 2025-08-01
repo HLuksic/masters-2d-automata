@@ -1,5 +1,5 @@
 class Interface {
-    constructor() {
+    constructor(gridSystem) {
         // UI elements
         this.gridWidthSlider = null;
         this.gridHeightSlider = null;
@@ -34,7 +34,8 @@ class Interface {
         this.deadColor = [255, 255, 255];
         this.aliveColor = [0, 0, 0];
         this.outlineColor = [136, 136, 136];
-        this.notation = '';
+        this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
+        this.gridSystem = gridSystem;
 
         this.initUI();
     }
@@ -212,8 +213,8 @@ class Interface {
         });
 
         this.saveStateBtn.mousePressed(() => {
-            let saveSystem = new SaveSystem();
-            saveSystem.saveState(camera);
+            let saveSystem = new SaveSystem(this.gridSystem, this);
+            saveSystem.saveState();
             alert('State saved successfully!');
         });
 
