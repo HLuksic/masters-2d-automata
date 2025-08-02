@@ -245,6 +245,7 @@ class Interface {
                 let name = e.target.getAttribute('data-name');
                 if (saveSystem.deleteState(name)) {
                     saveSystem.loadStateList(); // Refresh the list
+                    this.addStateEventListeners(); // Re-add event listeners
                 } else {
                     console.error('Failed to delete state:', name);
                 }
@@ -266,7 +267,6 @@ class Interface {
     }
 
     updateRuleNotation() {
-        console.log(gridSystem);
         let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
         let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
             gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
@@ -296,8 +296,6 @@ class Interface {
         this.birthMaxSlider.attribute('max', maxNeighbors);
         this.survivalMinSlider.attribute('max', maxNeighbors);
         this.survivalMaxSlider.attribute('max', maxNeighbors);
-
-        console.log(gameRules);
 
         // Clamp current values to new bounds
         if (gameRules.birthMin > maxNeighbors) {

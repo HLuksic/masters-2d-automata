@@ -72,7 +72,10 @@ class SaveSystem {
         let statesList = document.getElementById('statesList');
         statesList.innerHTML = ''; // Clear existing list
 
-        for (let key in states) {
+        // Order states by timestamp (newest first)
+        let keys = Object.keys(states).reverse();
+
+        for (let key of keys) {
             let state = states[key];
             let notation = state.notation;
             let date = new Date(state.timestamp);
@@ -117,9 +120,6 @@ class SaveSystem {
         aliveColor = this.hexToRgb(notationParts[5]);
         deadColor = this.hexToRgb(notationParts[6]);
         outlineColor = this.hexToRgb(notationParts[7]);
-
-        console.log(gridSystem.type);
-        console.log(gameRules);
     }
 
     hexToRgb(hex) {
