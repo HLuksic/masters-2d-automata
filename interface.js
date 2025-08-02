@@ -29,7 +29,6 @@ class Interface {
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
         this.showOutline = true;
-
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
         this.saveSystem = saveSystem;
 
@@ -93,7 +92,6 @@ class Interface {
         // Button events
         this.hexBtn.mousePressed(() => this.setGridType('hex', this.hexBtn));
         this.triBtn.mousePressed(() => this.setGridType('tri', this.triBtn));
-
 
         // Simulation button events
         this.playPauseBtn.mousePressed(() => {
@@ -209,7 +207,7 @@ class Interface {
         });
 
         this.saveStateBtn.mousePressed(() => {
-            let name = prompt('Name:', `State ${new Date().toLocaleString()}`); // if user cancels, dont save
+            let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
             if (!name) return;
             if (name.trim() === '') {
                 alert('Name cannot be empty');
@@ -223,11 +221,47 @@ class Interface {
             // }
             this.saveSystem.saveState(name, this.notation);
             this.saveSystem.loadStateList();
+            this.addStateEventListeners();
         });
 
         this.clearStatesBtn.mousePressed(() => {
             confirm('Are you sure you want to clear all saved states?') && this.saveSystem.deleteAllStates();
             this.saveSystem.loadStateList();
+        });
+
+        this.addStateEventListeners();
+    }
+
+    addStateEventListeners() {
+        let loadButtons = document.querySelectorAll('.loadState');
+        let deleteButtons = document.querySelectorAll('.deleteState');
+
+        loadButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                let name = e.target.getAttribute('data-name');
+                let state = this.saveSystem.loadState(name);
+                if (state) {
+                    this.saveSystem.applyState(state);
+                    triggerRedraw();
+                    this.updateRuleNotation();
+                    this.updateNeighborhoodBounds();
+                    this.updateSliderBounds();
+                } else {
+                    console.error('Failed to load state:', name);
+                }
+                e.stopPropagation(); // Prevent card click event
+            });
+        });
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                let name = e.target.getAttribute('data-name');
+                if (this.saveSystem.deleteState(name)) {
+                    this.saveSystem.loadStateList(); // Refresh the list
+                } else {
+                    console.error('Failed to delete state:', name);
+                }
+            });
         });
     }
 

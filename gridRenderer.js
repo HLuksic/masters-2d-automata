@@ -1,8 +1,7 @@
 class GridRenderer {
-    constructor(gridSystem, camera, ui) {
+    constructor(gridSystem, camera) {
         this.grid = gridSystem;
         this.camera = camera;
-        this.ui = ui;
         this.hexVertices = this.precomputeHexVertices();
     }
 

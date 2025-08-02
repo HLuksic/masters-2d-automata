@@ -2,6 +2,7 @@ class SaveSystem {
     constructor(gridSystem) {
         this.storageKey = 'cellularAutomataStates';
         this.gridSystem = gridSystem;
+        this.loadStateList();
     }
 
     saveState(name, notation) {
@@ -92,38 +93,6 @@ class SaveSystem {
             `;
             statesList.appendChild(card);
         }
-
-        // Add event listeners for load and delete buttons
-        this.addStateEventListeners();
-    }
-
-    addStateEventListeners() {
-        let loadButtons = document.querySelectorAll('.loadState');
-        let deleteButtons = document.querySelectorAll('.deleteState');
-
-        loadButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                let name = e.target.getAttribute('data-name');
-                let state = this.loadState(name);
-                if (state) {
-                    this.applyState(state);
-                } else {
-                    console.error('Failed to load state:', name);
-                }
-                e.stopPropagation(); // Prevent card click event
-            });
-        });
-
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                let name = e.target.getAttribute('data-name');
-                if (this.deleteState(name)) {
-                    this.loadStateList(); // Refresh the list
-                } else {
-                    console.error('Failed to delete state:', name);
-                }
-            });
-        });
     }
 
     applyState(state) {
@@ -138,7 +107,7 @@ class SaveSystem {
         // Remove first char from each part
         notationParts = notationParts.map(part => part.substring(1));
 
-        this.gridSystem.setGridType(notationParts[0]);
+        this.gridSystem.setType(notationParts[0]);
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
         gameRules.birthMin = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[0] : notationParts[3]);
@@ -149,7 +118,9 @@ class SaveSystem {
         deadColor = this.hexToRgb(notationParts[6]);
         outlineColor = this.hexToRgb(notationParts[7]);
 
-        // console.log(deadColor)
+        console.log(gameRules);
+        console.log(aliveColor, deadColor, outlineColor);
+
 
         // print all
         // console.log('Applying state with values:', {
