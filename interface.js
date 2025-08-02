@@ -339,10 +339,16 @@ class Interface {
         this.birthMaxSlider.value(gameRules.birthMax);
         this.survivalMinSlider.value(gameRules.survivalMin);
         this.survivalMaxSlider.value(gameRules.survivalMax);
+        this.cellPhasesSlider.value(gameRules.cellPhases);
         this.birthMinValue.html(gameRules.birthMin);
         this.birthMaxValue.html(gameRules.birthMax);
         this.survivalMinValue.html(gameRules.survivalMin);
         this.survivalMaxValue.html(gameRules.survivalMax);
+        this.cellPhasesValue.html(gameRules.cellPhases);
+        console.log(this.ring1Radio);
+        this.ring1Radio.elt.checked = (gameRules.neighborDistance === 1);
+        this.ring2Radio.elt.checked = (gameRules.neighborDistance === 2);
+        this.ring3Radio.elt.checked = (gameRules.neighborDistance === 3);
         this.deadColorPicker.value(this.rgbToHex(deadColor));
         this.aliveColorPicker.value(this.rgbToHex(aliveColor));
         this.outlineColorPicker.value(this.rgbToHex(outlineColor));

@@ -23,14 +23,16 @@ let gameRules = {
 };
 
 function setup() {
-    let canvas = createCanvas(canvasContainerWidth, 900);
+    let canvas = createCanvas(canvasContainerWidth, 900, WEBGL);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
 
     triggerRedraw();
 
     // Initialize systems
-    gridSystem = new GridSystem();
+    gridSystem = new ShaderGridSystem(canvasContainerWidth, 900, "hex", canvas);
+    gridSystem.initShader();
+    // gridSystem = new GridSystem();
     saveSystem = new SaveSystem();
     ui = new Interface();
     camera = new Camera();
@@ -39,7 +41,7 @@ function setup() {
 
 function draw() {
     // Only redraw if something has changed
-    if ((!needsRedraw && !isPlaying) || frameCount % 5 !== 0) {
+    if (!needsRedraw && !isPlaying) {
         return;
     }
 

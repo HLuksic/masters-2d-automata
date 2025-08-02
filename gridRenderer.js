@@ -74,7 +74,7 @@ class GridRenderer {
         strokeWeight(0.5);
 
         let hexRadius = cellSize * 0.5;
-        let hexWidth = hexRadius * 2;
+        let hexWidth = cellSize;
         let hexHeight = hexRadius * sqrt(3);
 
         let startX = -gridSystem.width * hexWidth * 0.75 / 2;
@@ -120,6 +120,28 @@ class GridRenderer {
                 let pointUp = x % 2 === 0;
                 this.drawTriangle(triX, triY, triWidth, triHeight, pointUp);
             }
+        }
+    }
+
+    drawHexagon(centerX, centerY, radius) {
+        beginShape();
+        for (let i = 0; i < 6; i++) {
+            let x = centerX + this.hexVertices[i].x * radius * 100;
+            let y = centerY + this.hexVertices[i].y * radius * 100;
+            vertex(x, y);
+        }
+        endShape(CLOSE);
+    }
+
+    drawTriangle(centerX, centerY, width, height, pointUp) {
+        if (pointUp) {
+            triangle(centerX, centerY - height * 0.5,
+                centerX - width * 0.5, centerY + height * 0.5,
+                centerX + width * 0.5, centerY + height * 0.5);
+        } else {
+            triangle(centerX, centerY + height * 0.5,
+                centerX - width * 0.5, centerY - height * 0.5,
+                centerX + width * 0.5, centerY - height * 0.5);
         }
     }
 
