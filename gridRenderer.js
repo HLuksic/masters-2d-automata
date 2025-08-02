@@ -1,7 +1,5 @@
 class GridRenderer {
-    constructor(gridSystem, camera) {
-        this.grid = gridSystem;
-        this.camera = camera;
+    constructor() {
         this.hexVertices = this.precomputeHexVertices();
     }
 
@@ -18,10 +16,10 @@ class GridRenderer {
     }
 
     render() {
-        this.camera.apply();
+        camera.apply();
         let cellSize = this.calculateCellSize();
 
-        switch (this.grid.type) {
+        switch (gridSystem.type) {
             case 'hex':
                 this.renderHexGrid(cellSize);
                 break;
@@ -30,7 +28,7 @@ class GridRenderer {
                 break;
         }
 
-        this.camera.unapply();
+        camera.unapply();
     }
 
     calculateCellSize() {
@@ -79,15 +77,15 @@ class GridRenderer {
         let hexWidth = hexRadius * 2;
         let hexHeight = hexRadius * sqrt(3);
 
-        let startX = -this.grid.width * hexWidth * 0.75 / 2;
-        let startY = -this.grid.height * hexHeight / 2;
+        let startX = -gridSystem.width * hexWidth * 0.75 / 2;
+        let startY = -gridSystem.height * hexHeight / 2;
 
-        for (let y = 0; y < this.grid.height; y++) {
-            for (let x = 0; x < this.grid.width; x++) {
+        for (let y = 0; y < gridSystem.height; y++) {
+            for (let x = 0; x < gridSystem.width; x++) {
                 let hexX = startX + x * hexWidth * 0.75;
                 let hexY = startY + y * hexHeight + (x % 2) * hexHeight * 0.5;
 
-                let cellValue = this.grid.getCell(x, y);
+                let cellValue = gridSystem.getCell(x, y);
                 this.setCellColor(cellValue);
                 this.drawHexagon(hexX, hexY, hexRadius);
             }
@@ -102,11 +100,11 @@ class GridRenderer {
         let triWidth = cellSize;
         let rowHeight = triHeight;
 
-        let startX = -this.grid.width * triWidth * 0.5 / 2;
-        let startY = -this.grid.height * rowHeight / 2;
+        let startX = -gridSystem.width * triWidth * 0.5 / 2;
+        let startY = -gridSystem.height * rowHeight / 2;
 
-        for (let y = 0; y < this.grid.height; y++) {
-            for (let x = 0; x < this.grid.width; x++) {
+        for (let y = 0; y < gridSystem.height; y++) {
+            for (let x = 0; x < gridSystem.width; x++) {
                 let triX = startX + x * triWidth * 0.5;
                 let triY = startY + y * rowHeight;
 
@@ -115,7 +113,7 @@ class GridRenderer {
                     triX += triWidth * 0.5;
                 }
 
-                let cellValue = this.grid.getCell(x, y);
+                let cellValue = gridSystem.getCell(x, y);
                 this.setCellColor(cellValue);
 
                 // Alternate triangle direction based on column
@@ -147,12 +145,12 @@ class GridRenderer {
         }
     }
 
-    // Convert screen coordinates to grid coordinates
+    // Convert screen coordinates to gridSystem coordinates
     screenToGrid(screenX, screenY) {
-        let worldPos = this.camera.screenToWorld(screenX, screenY);
+        let worldPos = camera.screenToWorld(screenX, screenY);
         let cellSize = this.calculateCellSize();
 
-        switch (this.grid.type) {
+        switch (gridSystem.type) {
             case 'hex':
                 return this.screenToHexGrid(worldPos, cellSize);
             case 'tri':
@@ -166,14 +164,14 @@ class GridRenderer {
         let hexWidth = hexRadius * 2;
         let hexHeight = hexRadius * sqrt(3);
 
-        let startX = -this.grid.width * hexWidth * 0.75 / 2;
-        let startY = -this.grid.height * hexHeight / 2;
+        let startX = -gridSystem.width * hexWidth * 0.75 / 2;
+        let startY = -gridSystem.height * hexHeight / 2;
         // Account for column offset
         let offsetY = (Math.floor((worldPos.x - startX) / (hexWidth * 0.75)) % 2) * (hexHeight * 0.5);
         let approxX = Math.round((worldPos.x - startX) / (hexWidth * 0.75));
         let approxY = Math.round((worldPos.y - startY - offsetY) / hexHeight);
 
-        if (approxX >= 0 && approxX < this.grid.width && approxY >= 0 && approxY < this.grid.height) {
+        if (approxX >= 0 && approxX < gridSystem.width && approxY >= 0 && approxY < gridSystem.height) {
             return { x: approxX, y: approxY };
         }
         return null;
@@ -184,11 +182,11 @@ class GridRenderer {
         let triHeight = cellSize * 0.866; // sqrt(3)/2
         let triWidth = cellSize;
         let rowHeight = triHeight;
-        let startX = -this.grid.width * triWidth * 0.5 / 2;
-        let startY = -this.grid.height * rowHeight / 2;
+        let startX = -gridSystem.width * triWidth * 0.5 / 2;
+        let startY = -gridSystem.height * rowHeight / 2;
         let approxX = Math.round((worldPos.x - startX) / (triWidth * 0.5));
         let approxY = Math.round((worldPos.y - startY) / rowHeight);
-        if (approxX >= 0 && approxX < this.grid.width && approxY >= 0 && approxY < this.grid.height) {
+        if (approxX >= 0 && approxX < gridSystem.width && approxY >= 0 && approxY < gridSystem.height) {
             // Adjust for row offset
             if (approxY % 2 === 1) {
                 approxX = Math.floor(approxX - 0.5);

@@ -1,7 +1,6 @@
 class SaveSystem {
     constructor(gridSystem) {
         this.storageKey = 'cellularAutomataStates';
-        this.gridSystem = gridSystem;
         this.loadStateList();
     }
 
@@ -13,7 +12,7 @@ class SaveSystem {
         let state = {
             timestamp: Date.now(),
             notation: notation,
-            cells: JSON.parse(JSON.stringify(this.gridSystem.cells)), // Deep copy
+            cells: JSON.parse(JSON.stringify(gridSystem.cells)), // Deep copy
             image: canvasImage
         };
 
@@ -98,7 +97,7 @@ class SaveSystem {
     applyState(state) {
         if (!state) return false;
 
-        // Parse notation and set values: Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888 G - grid type, R - ring value, P - phases, B - birth, S - survival, A - alive color, D - dead color, O - outline color
+        // Parse notation and set values
         let notationParts = state.notation.split('/');
         if (notationParts.length < 6) {
             console.error('Invalid notation format:', state.notation);
@@ -107,7 +106,8 @@ class SaveSystem {
         // Remove first char from each part
         notationParts = notationParts.map(part => part.substring(1));
 
-        this.gridSystem.setType(notationParts[0]);
+        gridSystem.setType(notationParts[0] == 'h' ? 'hex' : 'tri');
+        gridSystem.cells = JSON.parse(JSON.stringify(state.cells)); // Deep copy
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
         gameRules.birthMin = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[0] : notationParts[3]);
@@ -118,65 +118,8 @@ class SaveSystem {
         deadColor = this.hexToRgb(notationParts[6]);
         outlineColor = this.hexToRgb(notationParts[7]);
 
+        console.log(gridSystem.type);
         console.log(gameRules);
-        console.log(aliveColor, deadColor, outlineColor);
-
-
-        // print all
-        // console.log('Applying state with values:', {
-        //     notationParts
-        // });
-    }
-
-    updateUIFromState(state) {
-        // Update grid type buttons
-        hexBtn.removeClass('active');
-        triBtn.removeClass('active');
-        if (state.gridType === 'hex') {
-            hexBtn.addClass('active');
-        } else {
-            triBtn.addClass('active');
-        }
-
-        // Update sliders
-        gridWidthSlider.value(state.gridWidth);
-        gridHeightSlider.value(state.gridHeight);
-        gridWidthValue.html(state.gridWidth);
-        gridHeightValue.html(state.gridHeight);
-
-        cellStagesSlider.value(state.cellStages);
-        cellStagesValue.html(state.cellStages);
-
-        // Update rule sliders
-        birthMinSlider.value(state.gameRules.birthMin);
-        birthMaxSlider.value(state.gameRules.birthMax);
-        survivalMinSlider.value(state.gameRules.survivalMin);
-        survivalMaxSlider.value(state.gameRules.survivalMax);
-
-        birthMinValue.html(state.gameRules.birthMin);
-        birthMaxValue.html(state.gameRules.birthMax);
-        survivalMinValue.html(state.gameRules.survivalMin);
-        survivalMaxValue.html(state.gameRules.survivalMax);
-
-        // Update neighborhood radio buttons
-        ring1Radio.checked(state.neighborhoodType === 'ring1');
-        ring2Radio.checked(state.neighborhoodType === 'ring2');
-        ring3Radio.checked(state.neighborhoodType === 'ring3');
-        customRadio.checked(state.neighborhoodType === 'custom');
-
-        if (state.neighborhoodType === 'custom') {
-            customDistanceDiv.style('display', 'block');
-            neighborDistanceSlider.value(state.neighborDistance);
-            neighborDistanceValue.html(state.neighborDistance);
-        } else {
-            customDistanceDiv.style('display', 'none');
-        }
-
-        // Update color pickers
-        deadColorPicker.value(this.rgbToHex(state.colors.dead));
-        aliveColorPicker.value(this.rgbToHex(state.colors.alive));
-        outlineColorPicker.value(this.rgbToHex(state.colors.outline));
-        showOutlinesCheckbox.checked(state.colors.showOutlines);
     }
 
     hexToRgb(hex) {

@@ -1,5 +1,5 @@
 class Interface {
-    constructor(saveSystem) {
+    constructor() {
         this.gridWidthSlider = null;
         this.gridHeightSlider = null;
         this.gridWidthValue = null;
@@ -22,15 +22,12 @@ class Interface {
         this.ring1Radio = null;
         this.ring2Radio = null;
         this.ring3Radio = null;
-        this.neighborDistanceSlider = null;
-        this.neighborDistanceValue = null;
         this.deadColorPicker = null;
         this.aliveColorPicker = null;
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
         this.showOutline = true;
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
-        this.saveSystem = saveSystem;
 
         this.initUI();
     }
@@ -38,7 +35,6 @@ class Interface {
     initUI() {
         this.gridWidthSlider = select('#gridWidth');
         this.gridHeightSlider = select('#gridHeight');
-        this.neighborDistanceSlider = select('#neighborDistance');
         this.birthMinSlider = select('#birthMin');
         this.birthMaxSlider = select('#birthMax');
         this.survivalMinSlider = select('#survivalMin');
@@ -62,7 +58,6 @@ class Interface {
 
         this.gridWidthValue = select('#gridWidthValue');
         this.gridHeightValue = select('#gridHeightValue');
-        this.neighborDistanceValue = select('#neighborDistanceValue');
         this.birthMinValue = select('#birthMinValue');
         this.birthMaxValue = select('#birthMaxValue');
         this.survivalMinValue = select('#survivalMinValue');
@@ -90,8 +85,8 @@ class Interface {
         });
 
         // Button events
-        this.hexBtn.mousePressed(() => this.setGridType('hex', this.hexBtn));
-        this.triBtn.mousePressed(() => this.setGridType('tri', this.triBtn));
+        this.hexBtn.mousePressed(() => this.changeGrid('hex'));
+        this.triBtn.mousePressed(() => this.changeGrid('tri'));   
 
         // Simulation button events
         this.playPauseBtn.mousePressed(() => {
@@ -176,13 +171,6 @@ class Interface {
             this.updateRuleNotation();
         });
 
-        this.neighborDistanceSlider.input(() => {
-            gameRules.neighborDistance = parseInt(this.neighborDistanceSlider.value());
-            this.neighborDistanceValue.html(gameRules.neighborDistance);
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-        });
-
         this.deadColorPicker.input(() => {
             deadColor = this.hexToRgb(this.deadColorPicker.value());
             triggerRedraw();
@@ -214,38 +202,37 @@ class Interface {
                 return;
             }
             name = name.trim();
-            // if (this.saveSystem.stateExists(name)) {
+            // if (saveSystem.stateExists(name)) {
             //     if (!confirm(`State "${name}" already exists. Overwrite?`)) {
             //         return;
             //     }
             // }
-            this.saveSystem.saveState(name, this.notation);
-            this.saveSystem.loadStateList();
+            saveSystem.saveState(name, this.notation);
+            saveSystem.loadStateList();
             this.addStateEventListeners();
         });
 
         this.clearStatesBtn.mousePressed(() => {
-            confirm('Are you sure you want to clear all saved states?') && this.saveSystem.deleteAllStates();
-            this.saveSystem.loadStateList();
+            confirm('Are you sure you want to clear all saved states?') && saveSystem.deleteAllStates();
+            saveSystem.loadStateList();
         });
 
         this.addStateEventListeners();
     }
 
     addStateEventListeners() {
+        // Add click events to state card load and delete buttons
         let loadButtons = document.querySelectorAll('.loadState');
         let deleteButtons = document.querySelectorAll('.deleteState');
 
         loadButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 let name = e.target.getAttribute('data-name');
-                let state = this.saveSystem.loadState(name);
+                let state = saveSystem.loadState(name);
                 if (state) {
-                    this.saveSystem.applyState(state);
+                    saveSystem.applyState(state);
+                    this.refreshUI();
                     triggerRedraw();
-                    this.updateRuleNotation();
-                    this.updateNeighborhoodBounds();
-                    this.updateSliderBounds();
                 } else {
                     console.error('Failed to load state:', name);
                 }
@@ -256,8 +243,8 @@ class Interface {
         deleteButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 let name = e.target.getAttribute('data-name');
-                if (this.saveSystem.deleteState(name)) {
-                    this.saveSystem.loadStateList(); // Refresh the list
+                if (saveSystem.deleteState(name)) {
+                    saveSystem.loadStateList(); // Refresh the list
                 } else {
                     console.error('Failed to delete state:', name);
                 }
@@ -279,6 +266,7 @@ class Interface {
     }
 
     updateRuleNotation() {
+        console.log(gridSystem);
         let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
         let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
             gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
@@ -309,37 +297,7 @@ class Interface {
         this.survivalMinSlider.attribute('max', maxNeighbors);
         this.survivalMaxSlider.attribute('max', maxNeighbors);
 
-        // Clamp current values to new bounds
-        if (gameRules.birthMin > maxNeighbors) {
-            gameRules.birthMin = maxNeighbors;
-            this.birthMinSlider.value(gameRules.birthMin);
-            this.birthMinValue.html(gameRules.birthMin);
-        }
-        if (gameRules.birthMax > maxNeighbors) {
-            gameRules.birthMax = maxNeighbors;
-            this.birthMaxSlider.value(gameRules.birthMax);
-            this.birthMaxValue.html(gameRules.birthMax);
-        }
-        if (gameRules.survivalMin > maxNeighbors) {
-            gameRules.survivalMin = maxNeighbors;
-            this.survivalMinSlider.value(gameRules.survivalMin);
-            this.survivalMinValue.html(gameRules.survivalMin);
-        }
-        if (gameRules.survivalMax > maxNeighbors) {
-            gameRules.survivalMax = maxNeighbors;
-            this.survivalMaxSlider.value(gameRules.survivalMax);
-            this.survivalMaxValue.html(gameRules.survivalMax);
-        }
-    }
-
-    updateSliderBounds() {
-        let maxNeighbors = gridSystem.type === 'hex' ? 6 : 12;
-
-        // Update slider max values
-        this.birthMinSlider.attribute('max', maxNeighbors);
-        this.birthMaxSlider.attribute('max', maxNeighbors);
-        this.survivalMinSlider.attribute('max', maxNeighbors);
-        this.survivalMaxSlider.attribute('max', maxNeighbors);
+        console.log(gameRules);
 
         // Clamp current values to new bounds
         if (gameRules.birthMin > maxNeighbors) {
@@ -364,19 +322,21 @@ class Interface {
         }
     }
 
-    setGridType(type, activeBtn) {
+    changeGrid(type) {
         gridSystem.setType(type);
+        this.refreshUI();
+    }
 
+    refreshUI() {
         // Update button states
         this.hexBtn.removeClass('active');
         this.triBtn.removeClass('active');
-        activeBtn.addClass('active');
+        gridSystem.type === 'hex' ? this.hexBtn.addClass('active') : this.triBtn.addClass('active');
 
         // Update bounds
         this.updateNeighborhoodBounds();
-        this.updateSliderBounds();
 
-        // Update UI to reflect new rules
+        // Update UI to reflect possible new rules
         this.birthMinSlider.value(gameRules.birthMin);
         this.birthMaxSlider.value(gameRules.birthMax);
         this.survivalMinSlider.value(gameRules.survivalMin);
@@ -385,6 +345,9 @@ class Interface {
         this.birthMaxValue.html(gameRules.birthMax);
         this.survivalMinValue.html(gameRules.survivalMin);
         this.survivalMaxValue.html(gameRules.survivalMax);
+        this.deadColorPicker.value(this.rgbToHex(deadColor));
+        this.aliveColorPicker.value(this.rgbToHex(aliveColor));
+        this.outlineColorPicker.value(this.rgbToHex(outlineColor));
 
         this.updateRuleNotation();
         triggerRedraw();

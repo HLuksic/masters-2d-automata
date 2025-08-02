@@ -33,10 +33,10 @@ function setup() {
 
     // Initialize systems
     gridSystem = new GridSystem();
-    saveSystem = new SaveSystem(gridSystem);
-    ui = new Interface(saveSystem);
+    saveSystem = new SaveSystem();
+    ui = new Interface();
     camera = new Camera();
-    renderer = new GridRenderer(gridSystem, camera);
+    renderer = new GridRenderer();
 }
 
 function draw() {
