@@ -1,7 +1,3 @@
-// Global constants
-const CANVAS_WIDTH = 1700;
-const CANVAS_HEIGHT = 900;
-
 // Global variables
 let gridSystem;
 let camera;
@@ -14,6 +10,8 @@ let needsRedraw = true;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
 let outlineColor = [136, 136, 136];
+let canvasContainer = document.getElementById('canvas-container');
+let canvasContainerWidth = canvasContainer.clientWidth;
 
 let gameRules = {
     birthMin: 2,
@@ -25,7 +23,7 @@ let gameRules = {
 };
 
 function setup() {
-    let canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+    let canvas = createCanvas(canvasContainerWidth, 900);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
 
@@ -53,6 +51,12 @@ function draw() {
     background(150);
     renderer.render();
     needsRedraw = false;
+}
+
+function windowResized() {
+    canvasContainerWidth = canvasContainer.clientWidth;
+    resizeCanvas(canvasContainerWidth, 900);
+    triggerRedraw();
 }
 
 // Keyboard events
