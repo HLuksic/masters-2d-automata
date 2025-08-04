@@ -17,6 +17,15 @@ class GridSystem {
         return grid;
     }
 
+    randomizeCells() {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                // Randomly set cells to random cellPhase
+                this.cells[y][x] = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * gameRules.cellPhases) + 1;
+            }
+        }
+    }
+
     resize(newWidth, newHeight) {
         let oldGrid = this.cells;
         this.width = newWidth;

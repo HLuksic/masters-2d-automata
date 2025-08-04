@@ -7,6 +7,7 @@ class Interface {
         this.playPauseBtn = null;
         this.stepBtn = null;
         this.clearBtn = null;
+        this.randomizeBtn = null;
         this.hexBtn = null;
         this.triBtn = null;
         this.birthMinSlider = null;
@@ -55,6 +56,7 @@ class Interface {
         this.playPauseBtn = select('#playPause');
         this.stepBtn = select('#stepBtn');
         this.clearBtn = select('#clearBtn');
+        this.randomizeBtn = select('#randomizeBtn');
 
         this.gridWidthValue = select('#gridWidthValue');
         this.gridHeightValue = select('#gridHeightValue');
@@ -86,7 +88,7 @@ class Interface {
 
         // Button events
         this.hexBtn.mousePressed(() => this.changeGrid('hex'));
-        this.triBtn.mousePressed(() => this.changeGrid('tri'));   
+        this.triBtn.mousePressed(() => this.changeGrid('tri'));
 
         // Simulation button events
         this.playPauseBtn.mousePressed(() => {
@@ -101,6 +103,11 @@ class Interface {
 
         this.clearBtn.mousePressed(() => {
             gridSystem.cells = gridSystem.createEmptyGrid();
+            triggerRedraw();
+        });
+
+        this.randomizeBtn.mousePressed(() => {
+            gridSystem.randomizeCells();
             triggerRedraw();
         });
 
@@ -335,11 +342,15 @@ class Interface {
         this.updateNeighborhoodBounds();
 
         // Update UI to reflect possible new rules
+        this.gridWidthSlider.value(gridSystem.width);
+        this.gridHeightSlider.value(gridSystem.height);
         this.birthMinSlider.value(gameRules.birthMin);
         this.birthMaxSlider.value(gameRules.birthMax);
         this.survivalMinSlider.value(gameRules.survivalMin);
         this.survivalMaxSlider.value(gameRules.survivalMax);
         this.cellPhasesSlider.value(gameRules.cellPhases);
+        this.gridWidthValue.html(gridSystem.width);
+        this.gridHeightValue.html(gridSystem.height);
         this.birthMinValue.html(gameRules.birthMin);
         this.birthMaxValue.html(gameRules.birthMax);
         this.survivalMinValue.html(gameRules.survivalMin);

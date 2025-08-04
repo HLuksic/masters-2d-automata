@@ -111,6 +111,8 @@ class SaveSystem {
 
         gridSystem.setType(notationParts[0] == 'h' ? 'hex' : 'tri');
         gridSystem.cells = JSON.parse(JSON.stringify(state.cells)); // Deep copy
+        gridSystem.height = gridSystem.cells.length;
+        gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
         gameRules.birthMin = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[0] : notationParts[3]);
