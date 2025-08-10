@@ -20,6 +20,7 @@ let gameRules = {
     survivalMax: 3,
     cellPhases: 1,
     neighborDistance: 1,
+    triangleNeighborhoodType: 'vonNeumann', // 'vonNeumann' or 'moore'
 };
 
 function setup() {

@@ -109,7 +109,8 @@ class SaveSystem {
         // Remove first char from each part
         notationParts = notationParts.map(part => part.substring(1));
 
-        gridSystem.setType(notationParts[0] == 'h' ? 'hex' : 'tri');
+        let gridType = notationParts[0] == 'h' ? 'hex' : 'tri';
+        gridSystem.setType(gridType);
         gridSystem.cells = JSON.parse(JSON.stringify(state.cells)); // Deep copy
         gridSystem.height = gridSystem.cells.length;
         gridSystem.width = gridSystem.cells[0].length;
@@ -119,9 +120,21 @@ class SaveSystem {
         gameRules.birthMax = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[1] : notationParts[3]);
         gameRules.survivalMin = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[0] : notationParts[4]);
         gameRules.survivalMax = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[1] : notationParts[4]);
-        aliveColor = this.hexToRgb(notationParts[5]);
-        deadColor = this.hexToRgb(notationParts[6]);
-        outlineColor = this.hexToRgb(notationParts[7]);
+
+        // Handle triangle neighborhood type (if present)
+        let colorStartIndex = 5;
+        if (gridType === 'tri' && notationParts.length > 8) {
+            // New format with neighborhood type
+            gameRules.triangleNeighborhoodType = notationParts[5] === 'V' ? 'vonNeumann' : 'moore';
+            colorStartIndex = 6;
+        } else if (gridType === 'tri') {
+            // Old format without neighborhood type - default to Moore (original behavior)
+            gameRules.triangleNeighborhoodType = 'moore';
+        }
+
+        aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
+        deadColor = this.hexToRgb(notationParts[colorStartIndex + 1]);
+        outlineColor = this.hexToRgb(notationParts[colorStartIndex + 2]);
     }
 
     hexToRgb(hex) {

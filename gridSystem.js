@@ -89,10 +89,52 @@ class GridSystem {
         return neighbors;
     }
 
-    getTriangleNeighbors(x, y) {
+    getTriangleNeighborsVonNeumann(x, y) {
         let neighbors = [];
 
-        // All 12 neighbors that touch by side or point
+        // Only the 3 side neighbors (von Neumann neighborhood)
+        let isEvenRow = y % 2 === 0;
+        let pointUp = x % 2 === 0;
+
+        if (isEvenRow) {
+            // Even rows (no horizontal offset)
+            if (pointUp) {
+                // Upward pointing triangle in even row
+                neighbors = [
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x - 1, y + 1] // bottom
+                ];
+            } else {
+                // Downward pointing triangle in even row
+                neighbors = [
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x - 1, y - 1] // top
+                ];
+            }
+        } else {
+            // Odd rows (horizontally offset)
+            if (pointUp) {
+                // Upward pointing triangle in odd row
+                neighbors = [
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x + 1, y + 1] // bottom
+                ];
+            } else {
+                // Downward pointing triangle in odd row
+                neighbors = [
+                    [x - 1, y], [x + 1, y], // left, right
+                    [x + 1, y - 1] // top
+                ];
+            }
+        }
+
+        return neighbors;
+    }
+
+    getTriangleNeighborsMoore(x, y) {
+        let neighbors = [];
+
+        // All 12 neighbors that touch by side or point (Moore neighborhood)
         let isEvenRow = y % 2 === 0;
         let pointUp = x % 2 === 0;
 
@@ -153,6 +195,14 @@ class GridSystem {
         }
 
         return neighbors;
+    }
+
+    getTriangleNeighbors(x, y) {
+        if (gameRules.triangleNeighborhoodType === 'vonNeumann') {
+            return this.getTriangleNeighborsVonNeumann(x, y);
+        } else {
+            return this.getTriangleNeighborsMoore(x, y);
+        }
     }
 
     getHexNeighborsAtDistance(x, y, maxDistance) {
@@ -277,9 +327,7 @@ class GridSystem {
 
         let count = 0;
         for (let [nx, ny] of neighbors) {
-            if (this.isCellAlive(nx, ny)) {
-                count++;
-            }
+            count += this.getCell(nx, ny);
         }
 
         return count;

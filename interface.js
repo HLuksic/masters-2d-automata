@@ -23,6 +23,9 @@ class Interface {
         this.ring1Radio = null;
         this.ring2Radio = null;
         this.ring3Radio = null;
+        this.vonNeumannRadio = null;
+        this.mooreRadio = null;
+        this.triangleNeighborhoodGroup = null;
         this.deadColorPicker = null;
         this.aliveColorPicker = null;
         this.outlineColorPicker = null;
@@ -43,6 +46,9 @@ class Interface {
         this.ring1Radio = select('#ring1');
         this.ring2Radio = select('#ring2');
         this.ring3Radio = select('#ring3');
+        this.vonNeumannRadio = select('#vonNeumann');
+        this.mooreRadio = select('#moore');
+        this.triangleNeighborhoodGroup = select('#triangleNeighborhoodType');
         this.cellPhasesSlider = select('#cellPhases');
         this.cellPhasesValue = select('#cellPhasesValue');
         this.deadColorPicker = select('#deadColor');
@@ -83,6 +89,7 @@ class Interface {
         this.cellPhasesSlider.input(() => {
             gameRules.cellPhases = parseInt(this.cellPhasesSlider.value());
             this.cellPhasesValue.html(gameRules.cellPhases);
+            this.updateNeighborhoodBounds();
             this.updateRuleNotation();
         });
 
@@ -174,6 +181,19 @@ class Interface {
 
         this.ring3Radio.mousePressed(() => {
             gameRules.neighborDistance = 3;
+            this.updateNeighborhoodBounds();
+            this.updateRuleNotation();
+        });
+
+        // Triangle neighborhood type radio events
+        this.vonNeumannRadio.mousePressed(() => {
+            gameRules.triangleNeighborhoodType = 'vonNeumann';
+            this.updateNeighborhoodBounds();
+            this.updateRuleNotation();
+        });
+
+        this.mooreRadio.mousePressed(() => {
+            gameRules.triangleNeighborhoodType = 'moore';
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
         });
@@ -277,20 +297,34 @@ class Interface {
         let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
         let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
             gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
-        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
+
+        let neighborhoodType = '';
+        if (gridSystem.type === 'tri') {
+            neighborhoodType = `/N${gameRules.triangleNeighborhoodType === 'vonNeumann' ? 'V' : 'M'}`;
+        }
+
+        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
 
         select('#ruleCode').value(this.notation);
     }
 
     getMaxNeighborsForDistance(gridType, distance) {
         if (gridType === 'hex') {
-            if (distance === 1) return 6;
-            if (distance === 2) return 18;
-            if (distance === 3) return 36;
+            if (distance === 1) return 6 * gameRules.cellPhases;
+            if (distance === 2) return 18 * gameRules.cellPhases;
+            if (distance === 3) return 36 * gameRules.cellPhases;
         } else if (gridType === 'tri') {
-            if (distance === 1) return 12;
-            if (distance === 2) return 30;
-            if (distance === 3) return 54;
+            if (gameRules.triangleNeighborhoodType === 'vonNeumann') {
+                // Von Neumann neighborhood (3 side neighbors)
+                if (distance === 1) return 3 * gameRules.cellPhases;
+                if (distance === 2) return 9 * gameRules.cellPhases;
+                if (distance === 3) return 18 * gameRules.cellPhases;
+            } else {
+                // Moore neighborhood (12 neighbors)
+                if (distance === 1) return 12 * gameRules.cellPhases;
+                if (distance === 2) return 30 * gameRules.cellPhases;
+                if (distance === 3) return 54 * gameRules.cellPhases;
+            }
         }
         return 0;
     }
@@ -338,6 +372,13 @@ class Interface {
         this.triBtn.removeClass('active');
         gridSystem.type === 'hex' ? this.hexBtn.addClass('active') : this.triBtn.addClass('active');
 
+        // Show/hide triangle neighborhood controls
+        if (gridSystem.type === 'tri') {
+            this.triangleNeighborhoodGroup.style('display', 'block');
+        } else {
+            this.triangleNeighborhoodGroup.style('display', 'none');
+        }
+
         // Update bounds
         this.updateNeighborhoodBounds();
 
@@ -356,10 +397,16 @@ class Interface {
         this.survivalMinValue.html(gameRules.survivalMin);
         this.survivalMaxValue.html(gameRules.survivalMax);
         this.cellPhasesValue.html(gameRules.cellPhases);
-        console.log(this.ring1Radio);
+
+        // Update radio button states
         this.ring1Radio.elt.checked = (gameRules.neighborDistance === 1);
         this.ring2Radio.elt.checked = (gameRules.neighborDistance === 2);
         this.ring3Radio.elt.checked = (gameRules.neighborDistance === 3);
+
+        // Update triangle neighborhood radio buttons
+        this.vonNeumannRadio.elt.checked = (gameRules.triangleNeighborhoodType === 'vonNeumann');
+        this.mooreRadio.elt.checked = (gameRules.triangleNeighborhoodType === 'moore');
+
         this.deadColorPicker.value(this.rgbToHex(deadColor));
         this.aliveColorPicker.value(this.rgbToHex(aliveColor));
         this.outlineColorPicker.value(this.rgbToHex(outlineColor));
