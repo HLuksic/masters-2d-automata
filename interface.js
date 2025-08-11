@@ -30,7 +30,7 @@ class Interface {
         this.aliveColorPicker = null;
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
-        this.showOutline = true;
+        this.showOutline = false;
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
 
         this.initUI();

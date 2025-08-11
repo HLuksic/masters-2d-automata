@@ -1,3 +1,82 @@
+const NEUMANN_TRIANGLE_NEIGHBORS_UP_EVEN = [[-1, 0], [1, 0], [-1, 1]];
+const NEUMANN_TRIANGLE_NEIGHBORS_UP_ODD = [[-1, 0], [1, 0], [1, 1]];
+const NEUMANN_TRIANGLE_NEIGHBORS_DOWN_EVEN = [[-1, 0], [1, 0], [-1, -1]];
+const NEUMANN_TRIANGLE_NEIGHBORS_DOWN_ODD = [[-1, 0], [1, 0], [1, -1]];
+
+const NEUMANN_TRIANGLE_NEIGHBOR_MAP = {
+    'true-true': NEUMANN_TRIANGLE_NEIGHBORS_UP_EVEN,
+    'true-false': NEUMANN_TRIANGLE_NEIGHBORS_DOWN_EVEN,
+    'false-true': NEUMANN_TRIANGLE_NEIGHBORS_UP_ODD,
+    'false-false': NEUMANN_TRIANGLE_NEIGHBORS_DOWN_ODD
+};
+
+const MOORE_TRIANGLE_NEIGHBORS_UP_EVEN = [
+    [-1, 0], [1, 0], // left, right
+    [-1, 1], // top
+    // Point neighbors (9)
+    [-2, 0], [2, 0], // far left, far right
+    [-2, -1], [-1, -1], [0, -1], // bottom row
+    [-2, 1], [0, 1], // top
+    [-3, 1], [1, 1] // far top
+];
+
+const MOORE_TRIANGLE_NEIGHBORS_UP_ODD = [
+    [-1, 0], [1, 0],
+    [1, 1],
+    [-2, 0], [2, 0],
+    [0, -1], [1, -1], [2, -1],
+    [0, 1], [2, 1],
+    [-1, 1], [3, 1]
+];
+
+const MOORE_TRIANGLE_NEIGHBORS_DOWN_EVEN = [
+    [-1, 0], [1, 0],
+    [-1, -1],
+    [-2, 0], [2, 0],
+    [-2, 1], [-1, 1], [0, 1],
+    [-2, -1], [0, -1],
+    [-3, -1], [1, -1]
+];
+
+const MOORE_TRIANGLE_NEIGHBORS_DOWN_ODD = [
+    [-1, 0], [1, 0],
+    [1, -1],
+    [-2, 0], [2, 0],
+    [0, 1], [1, 1], [2, 1],
+    [0, -1], [2, -1],
+    [-1, -1], [3, -1]
+];
+
+const MOORE_TRIANGLE_NEIGHBOR_MAP = {
+    'true-true': MOORE_TRIANGLE_NEIGHBORS_UP_EVEN,
+    'true-false': MOORE_TRIANGLE_NEIGHBORS_DOWN_EVEN,
+    'false-true': MOORE_TRIANGLE_NEIGHBORS_UP_ODD,
+    'false-false': MOORE_TRIANGLE_NEIGHBORS_DOWN_ODD
+};
+
+const HEX_NEIGHBORS_EVEN = [
+    [0, -1],     // top
+    [1, -1],     // top-right
+    [1, 0],     // bottom-right
+    [0, 1],     // bottom
+    [-1, 0],    // bottom-left
+    [-1, -1]    // top-left
+];
+
+const HEX_NEIGHBORS_ODD = [
+    [0, -1],
+    [1, 0],
+    [1, 1],
+    [0, 1],
+    [-1, 1],
+    [-1, 0]
+];
+
+const HEX_NEIGHBOR_MAP = {
+    'true': HEX_NEIGHBORS_EVEN,
+    'false': HEX_NEIGHBORS_ODD
+};
+
 class GridSystem {
     constructor() {
         this.width = 50;
@@ -7,9 +86,9 @@ class GridSystem {
     }
 
     createEmptyGrid() {
-        let grid = [];
+        let grid = Array(this.height).fill(null)
+            .map(() => new Uint8Array(this.width));
         for (let y = 0; y < this.height; y++) {
-            grid[y] = [];
             for (let x = 0; x < this.width; x++) {
                 grid[y][x] = 0; // 0 = dead, 1+ = alive
             }
@@ -49,6 +128,10 @@ class GridSystem {
             return this.cells[y][x];
         }
         return 0;
+
+        // x = ((x % this.width) + this.width) % this.width;
+        // y = ((y % this.height) + this.height) % this.height;
+        // return this.cells[y][x];
     }
 
     setCell(x, y, value) {
@@ -58,255 +141,82 @@ class GridSystem {
     }
 
     getHexNeighbors(x, y) {
-        let neighbors = [];
+        const isEvenCol = x % 2 === 0;
 
-        // Hexagonal grid has 6 neighbors
-        // The neighbor pattern depends on whether the column is even or odd
-        let isEvenCol = x % 2 === 0;
-
-        if (isEvenCol) {
-            // Even columns
-            neighbors = [
-                [x, y - 1],     // top
-                [x + 1, y - 1], // top-right
-                [x + 1, y],     // bottom-right
-                [x, y + 1],     // bottom
-                [x - 1, y],     // bottom-left
-                [x - 1, y - 1]  // top-left
-            ];
-        } else {
-            // Odd columns
-            neighbors = [
-                [x, y - 1],     // top
-                [x + 1, y],     // top-right
-                [x + 1, y + 1], // bottom-right
-                [x, y + 1],     // bottom
-                [x - 1, y + 1], // bottom-left
-                [x - 1, y]      // top-left
-            ];
-        }
-
-        return neighbors;
-    }
-
-    getTriangleNeighborsVonNeumann(x, y) {
-        let neighbors = [];
-
-        // Only the 3 side neighbors (von Neumann neighborhood)
-        let isEvenRow = y % 2 === 0;
-        let pointUp = x % 2 === 0;
-
-        if (isEvenRow) {
-            // Even rows (no horizontal offset)
-            if (pointUp) {
-                // Upward pointing triangle in even row
-                neighbors = [
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x - 1, y + 1] // bottom
-                ];
-            } else {
-                // Downward pointing triangle in even row
-                neighbors = [
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x - 1, y - 1] // top
-                ];
-            }
-        } else {
-            // Odd rows (horizontally offset)
-            if (pointUp) {
-                // Upward pointing triangle in odd row
-                neighbors = [
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x + 1, y + 1] // bottom
-                ];
-            } else {
-                // Downward pointing triangle in odd row
-                neighbors = [
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x + 1, y - 1] // top
-                ];
-            }
-        }
-
-        return neighbors;
-    }
-
-    getTriangleNeighborsMoore(x, y) {
-        let neighbors = [];
-
-        // All 12 neighbors that touch by side or point (Moore neighborhood)
-        let isEvenRow = y % 2 === 0;
-        let pointUp = x % 2 === 0;
-
-        if (isEvenRow) {
-            // Even rows (no horizontal offset)
-            if (pointUp) {
-                // Upward pointing triangle in even row
-                neighbors = [
-                    // Side neighbors (3)
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x - 1, y + 1], // bottom
-                    // Point neighbors (9)
-                    [x - 2, y], [x + 2, y], // far left, far right
-                    [x - 2, y - 1], [x - 1, y - 1], [x, y - 1], // top row
-                    [x - 2, y + 1], [x, y + 1], // bottom neighbors
-                    [x - 3, y + 1], [x + 1, y + 1] // far bottom neighbors
-                ];
-            } else {
-                // Downward pointing triangle in even row
-                neighbors = [
-                    // Side neighbors (3)
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x - 1, y - 1], // top
-                    // Point neighbors (9)
-                    [x - 2, y], [x + 2, y], // far left, far right
-                    [x - 2, y + 1], [x - 1, y + 1], [x, y + 1], // bottom row
-                    [x - 2, y - 1], [x, y - 1], // top neighbors
-                    [x - 3, y - 1], [x + 1, y - 1] // far top neighbors
-                ];
-            }
-        } else {
-            // Odd rows(horizontally offset)
-            if (pointUp) {
-                // Upward pointing triangle in odd row
-                neighbors = [
-                    // Side neighbors (3)
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x + 1, y + 1], // bottom
-                    // Point neighbors (9)
-                    [x - 2, y], [x + 2, y], // far left, far right
-                    [x, y - 1], [x + 1, y - 1], [x + 2, y - 1], // top row
-                    [x, y + 1], [x + 2, y + 1], // bottom neighbors
-                    [x - 1, y + 1], [x + 3, y + 1] // far bottom neighbors
-                ];
-            } else {
-                // Downward pointing triangle in odd row
-                neighbors = [
-                    // Side neighbors (3)
-                    [x - 1, y], [x + 1, y], // left, right
-                    [x + 1, y - 1], // top
-                    // Point neighbors (9)
-                    [x - 2, y], [x + 2, y], // far left, far right
-                    [x, y + 1], [x + 1, y + 1], [x + 2, y + 1], // bottom row
-                    [x, y - 1], [x + 2, y - 1], // top neighbors
-                    [x - 1, y - 1], [x + 3, y - 1] // far top neighbors
-                ];
-            }
-        }
-
-        return neighbors;
+        return HEX_NEIGHBOR_MAP[isEvenCol].map(([dx, dy]) => [x + dx, y + dy]);
     }
 
     getTriangleNeighbors(x, y) {
-        if (gameRules.triangleNeighborhoodType === 'vonNeumann') {
-            return this.getTriangleNeighborsVonNeumann(x, y);
-        } else {
-            return this.getTriangleNeighborsMoore(x, y);
-        }
+        const isEvenRow = y % 2 === 0;
+        const pointUp = x % 2 === 0;
+        const key = `${isEvenRow}-${pointUp}`;
+
+        const offsets = gameRules.triangleNeighborhoodType === 'vonNeumann' ? NEUMANN_TRIANGLE_NEIGHBOR_MAP[key] : MOORE_TRIANGLE_NEIGHBOR_MAP[key];
+        return offsets.map(([dx, dy]) => [x + dx, y + dy]);
     }
 
     getHexNeighborsAtDistance(x, y, maxDistance) {
         if (maxDistance === 1) {
-            // Use the existing working function for ring 1
             return this.getHexNeighbors(x, y);
         }
 
-        let allNeighbors = new Set();
+        const visited = new Set();
+        const result = [];
+        let currentRing = [[x, y]];
 
-        // Add ring 1 neighbors
-        let ring1 = this.getHexNeighbors(x, y);
-        for (let neighbor of ring1) {
-            allNeighbors.add(`${neighbor[0]},${neighbor[1]}`);
-        }
+        const coordKey = (x, y) => `${x},${y}`;
+        visited.add(coordKey(x, y));
 
-        if (maxDistance >= 2) {
-            // Add ring 2 neighbors (neighbors of ring 1 neighbors)
-            for (let [nx, ny] of ring1) {
-                let ring2FromThis = this.getHexNeighbors(nx, ny);
-                for (let [nx2, ny2] of ring2FromThis) {
-                    if (nx2 !== x || ny2 !== y) { // Don't include center
-                        allNeighbors.add(`${nx2},${ny2}`);
+        for (let distance = 1; distance <= maxDistance; distance++) {
+            const nextRing = [];
+
+            for (const [cx, cy] of currentRing) {
+                for (const [nx, ny] of this.getHexNeighbors(cx, cy)) {
+                    const key = coordKey(nx, ny);
+                    if (!visited.has(key)) {
+                        visited.add(key);
+                        nextRing.push([nx, ny]);
+                        result.push([nx, ny]);
                     }
                 }
             }
+
+            currentRing = nextRing;
         }
 
-        if (maxDistance >= 3) {
-            // Add ring 3 neighbors
-            let ring2Array = Array.from(allNeighbors).map(coord => {
-                let [nx, ny] = coord.split(',').map(Number);
-                return [nx, ny];
-            }).filter(([nx, ny]) => {
-                return !ring1.some(([r1x, r1y]) => r1x === nx && r1y === ny);
-            });
-
-            for (let [nx, ny] of ring2Array) {
-                let ring3FromThis = this.getHexNeighbors(nx, ny);
-                for (let [nx3, ny3] of ring3FromThis) {
-                    if (nx3 !== x || ny3 !== y) {
-                        allNeighbors.add(`${nx3},${ny3}`);
-                    }
-                }
-            }
-        }
-
-        // Convert back to array format
-        return Array.from(allNeighbors).map(coord => {
-            let [nx, ny] = coord.split(',').map(Number);
-            return [nx, ny];
-        });
+        return result;
     }
 
     getTriangleNeighborsAtDistance(x, y, maxDistance) {
         if (maxDistance === 1) {
-            // Use the existing working function for ring 1
             return this.getTriangleNeighbors(x, y);
         }
 
-        let allNeighbors = new Set();
+        const visited = new Set();
+        const result = [];
+        let currentRing = [[x, y]];
 
-        // Add ring 1 neighbors
-        let ring1 = this.getTriangleNeighbors(x, y);
-        for (let neighbor of ring1) {
-            allNeighbors.add(`${neighbor[0]},${neighbor[1]}`);
-        }
+        const coordKey = (x, y) => `${x},${y}`;
+        visited.add(coordKey(x, y));
 
-        if (maxDistance >= 2) {
-            // Add ring 2 neighbors
-            for (let [nx, ny] of ring1) {
-                let ring2FromThis = this.getTriangleNeighbors(nx, ny);
-                for (let [nx2, ny2] of ring2FromThis) {
-                    if (nx2 !== x || ny2 !== y) {
-                        allNeighbors.add(`${nx2},${ny2}`);
+        for (let distance = 1; distance <= maxDistance; distance++) {
+            const nextRing = [];
+
+            for (const [cx, cy] of currentRing) {
+                for (const [nx, ny] of this.getTriangleNeighbors(cx, cy)) {
+                    const key = coordKey(nx, ny);
+                    if (!visited.has(key)) {
+                        visited.add(key);
+                        nextRing.push([nx, ny]);
+                        result.push([nx, ny]);
                     }
                 }
             }
+
+            currentRing = nextRing;
         }
 
-        if (maxDistance >= 3) {
-            // Add ring 3 neighbors
-            let ring2Array = Array.from(allNeighbors).map(coord => {
-                let [nx, ny] = coord.split(',').map(Number);
-                return [nx, ny];
-            }).filter(([nx, ny]) => {
-                return !ring1.some(([r1x, r1y]) => r1x === nx && r1y === ny);
-            });
-
-            for (let [nx, ny] of ring2Array) {
-                let ring3FromThis = this.getTriangleNeighbors(nx, ny);
-                for (let [nx3, ny3] of ring3FromThis) {
-                    if (nx3 !== x || ny3 !== y) {
-                        allNeighbors.add(`${nx3},${ny3}`);
-                    }
-                }
-            }
-        }
-
-        // Convert back to array format
-        return Array.from(allNeighbors).map(coord => {
-            let [nx, ny] = coord.split(',').map(Number);
-            return [nx, ny];
-        });
+        return result;
     }
 
     getNeighborsAtDistance(x, y, distance) {
