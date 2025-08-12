@@ -84,6 +84,7 @@ class GridSystem {
         this.type = 'hex'; // 'hex', 'tri'
         this.cells = this.createEmptyGrid();
         this.buffer = this.createEmptyGrid(); // next state buffer
+        this.changedCells = []; // track changed positions
         this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
     }
 
@@ -193,9 +194,14 @@ class GridSystem {
 
     setCell(x, y, value) {
         if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-            this.cells[y][x] = value;
+            if (this.cells[y][x] !== value) {
+                this.cells[y][x] = value;
+                if (!this.changedCells) this.changedCells = [];
+                this.changedCells.push({ x, y });
+            }
         }
     }
+
 
     sumNeighbors(x, y) {
         let count = 0;
@@ -209,31 +215,33 @@ class GridSystem {
     step() {
         let newGrid = this.buffer;
         let oldGrid = this.cells;
+        this.changedCells = []; // track changed positions
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 let liveNeighbors = this.sumNeighbors(x, y);
                 let currentCell = this.getCell(x, y);
+                let newValue;
 
                 if (currentCell > 0) {
-                    // Live cell - check survival rules
                     if (liveNeighbors >= gameRules.survivalMin && liveNeighbors <= gameRules.survivalMax) {
-                        // Cell survives - reset to full life
-                        newGrid[y][x] = gameRules.cellPhases;
+                        newValue = gameRules.cellPhases;
                     } else {
-                        // Cell should die - decrease stage
-                        newGrid[y][x] = Math.max(0, currentCell - 1);
+                        newValue = Math.max(0, currentCell - 1);
                     }
                 } else {
-                    // Dead cell - check birth rules
                     if (liveNeighbors >= gameRules.birthMin && liveNeighbors <= gameRules.birthMax) {
-                        // Cell is born
-                        newGrid[y][x] = gameRules.cellPhases;
+                        newValue = gameRules.cellPhases;
                     } else {
-                        // Cell stays dead
-                        newGrid[y][x] = 0;
+                        newValue = 0;
                     }
                 }
+
+                if (newValue !== currentCell) {
+                    this.changedCells.push({ x, y });
+                }
+
+                newGrid[y][x] = newValue;
             }
         }
 

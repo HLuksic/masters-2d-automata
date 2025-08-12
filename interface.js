@@ -94,8 +94,15 @@ class Interface {
         });
 
         // Button events
-        this.hexBtn.mousePressed(() => this.changeGrid('hex'));
-        this.triBtn.mousePressed(() => this.changeGrid('tri'));
+        this.hexBtn.mousePressed(() => {
+            this.changeGrid('hex');
+            triggerRedraw();
+        });
+
+        this.triBtn.mousePressed(() => {
+            this.changeGrid('tri');
+            triggerRedraw();
+        });
 
         // Simulation button events
         this.playPauseBtn.mousePressed(() => {
@@ -105,7 +112,6 @@ class Interface {
 
         this.stepBtn.mousePressed(() => {
             gridSystem.step();
-            triggerRedraw();
         });
 
         this.clearBtn.mousePressed(() => {

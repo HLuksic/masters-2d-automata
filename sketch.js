@@ -6,12 +6,13 @@ let saveSystem;
 let interface;
 let controlPressed = false;
 let isPlaying = false;
-let needsRedraw = true;
+let needsFullRedraw = true;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
 let outlineColor = [136, 136, 136];
 let canvasContainer = document.getElementById('canvas-container');
 let canvasContainerWidth = canvasContainer.clientWidth;
+let infoLayer;
 
 let gameRules = {
     birthMin: 2,
@@ -25,35 +26,34 @@ let gameRules = {
 
 function setup() {
     let canvas = createCanvas(canvasContainerWidth, 900);
+    infoLayer = createGraphics(100, 100);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
+    infoLayer.textFont('Courier New');
+    infoLayer.fill(0);
+    infoLayer.textAlign(LEFT, TOP);
+    infoLayer.textSize(16);
 
     triggerRedraw();
 
     gridSystem = new GridSystem();
-    saveSystem = new SaveSystem();
+    saveSystem = new SaveSystem();  
     ui = new Interface();
     camera = new Camera();
     renderer = new GridRenderer();
 }
 
 function draw() {
-    // Only redraw if something has changed
-    if (!needsRedraw && !isPlaying) {
-        return;
-    }
-
-    // Auto-step if playing
     if (isPlaying) {
         gridSystem.step();
     }
 
-    background(150);
+    if (needsFullRedraw) background(150);
     renderer.render();
-    needsRedraw = false;
 
-    let fps = frameRate();
-    text(`FPS: ${floor(fps)}`, 20, 20);
+    infoLayer.background(150);
+    infoLayer.text(`FPS: ${floor(frameRate())}`, 20, 20);
+    image(infoLayer, 0, 0);
 }
 
 function windowResized() {
@@ -79,7 +79,7 @@ function keyReleased() {
 }
 
 function triggerRedraw() {
-    needsRedraw = true;
+    needsFullRedraw = true;
 }
 
 // Mouse interaction
@@ -94,10 +94,8 @@ function mousePressed() {
             if (gridPos) {
                 if (mouseButton === LEFT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
-                    triggerRedraw();
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
-                    triggerRedraw();
                 }
             }
         }
@@ -114,10 +112,8 @@ function mouseDragged() {
         if (gridPos) {
             if (mouseButton === LEFT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
-                triggerRedraw();
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
-                triggerRedraw();
             }
         }
     }
@@ -134,7 +130,7 @@ function mouseWheel(event) {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         let zoomFactor = event.delta > 0 ? 0.9 : 1.1;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
-        needsRedraw = true;
+        needsFullRedraw = true;
         return false; // Prevent page scrolling
     }
 }

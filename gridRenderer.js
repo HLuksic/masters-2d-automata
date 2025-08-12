@@ -1,6 +1,8 @@
 class GridRenderer {
     constructor() {
         this.hexVertices = this.precomputeHexVertices();
+        this.cellSize = 12;
+        this.buffer = createGraphics(width, height); // Off-screen buffer
     }
 
     precomputeHexVertices() {
@@ -17,23 +19,19 @@ class GridRenderer {
 
     render() {
         camera.apply();
-        let cellSize = this.calculateCellSize();
 
         switch (gridSystem.type) {
             case 'hex':
-                this.renderHexGrid(cellSize);
+                this.renderHexGrid(this.cellSize, needsFullRedraw ? this.allCells() : gridSystem.changedCells);
                 break;
             case 'tri':
-                this.renderTriangleGrid(cellSize);
+                this.renderTriangleGrid(this.cellSize, needsFullRedraw ? this.allCells() : gridSystem.changedCells);
                 break;
         }
-
+        
+        needsFullRedraw = false;
         camera.unapply();
-    }
-
-    calculateCellSize() {
-        let baseSize = 12;
-        return baseSize;
+        image(this.buffer, 0, 0); // Draw buffer to main canvas
     }
 
     lerpColor(color1, color2, amount) {
@@ -69,33 +67,34 @@ class GridRenderer {
         }
     }
 
-    renderHexGrid(cellSize) {
-        stroke(150);
-        strokeWeight(0.5);
+    allCells() {
+        const arr = [];
+        for (let y = 0; y < gridSystem.height; y++) {
+            for (let x = 0; x < gridSystem.width; x++) {
+                arr.push({x, y});
+            }
+        }
+        return arr;
+    }
 
+    renderHexGrid(cellSize, cellsToDraw) {
         let hexRadius = cellSize * 0.5;
         let hexWidth = cellSize;
         let hexHeight = hexRadius * sqrt(3);
-
         let startX = -gridSystem.width * hexWidth * 0.75 / 2;
         let startY = -gridSystem.height * hexHeight / 2;
 
-        for (let y = 0; y < gridSystem.height; y++) {
-            for (let x = 0; x < gridSystem.width; x++) {
-                let hexX = startX + x * hexWidth * 0.75;
-                let hexY = startY + y * hexHeight + (x % 2) * hexHeight * 0.5;
+        for (let {x, y} of cellsToDraw) {
+            let hexX = startX + x * hexWidth * 0.75;
+            let hexY = startY + y * hexHeight + (x % 2) * hexHeight * 0.5;
 
-                let cellValue = gridSystem.getCell(x, y);
-                this.setCellColor(cellValue);
-                this.drawHexagon(hexX, hexY, hexRadius);
-            }
+            let cellValue = gridSystem.getCell(x, y);
+            this.setCellColor(cellValue);
+            this.drawHexagon(hexX, hexY, hexRadius);
         }
     }
 
-    renderTriangleGrid(cellSize) {
-        stroke(150);
-        strokeWeight(0.5);
-
+    renderTriangleGrid(cellSize, cellsToDraw) {
         let triHeight = cellSize * 0.866; // sqrt(3)/2 for equilateral triangle
         let triWidth = cellSize;
         let rowHeight = triHeight;
@@ -103,45 +102,21 @@ class GridRenderer {
         let startX = -gridSystem.width * triWidth * 0.5 / 2;
         let startY = -gridSystem.height * rowHeight / 2;
 
-        for (let y = 0; y < gridSystem.height; y++) {
-            for (let x = 0; x < gridSystem.width; x++) {
-                let triX = startX + x * triWidth * 0.5;
-                let triY = startY + y * rowHeight;
+        for (let {x, y} of cellsToDraw) {
+            let triX = startX + x * triWidth * 0.5;
+            let triY = startY + y * rowHeight;
 
-                // Offset every other row
-                if (y % 2 === 1) {
-                    triX += triWidth * 0.5;
-                }
-
-                let cellValue = gridSystem.getCell(x, y);
-                this.setCellColor(cellValue);
-
-                // Alternate triangle direction based on column
-                let pointUp = x % 2 === 0;
-                this.drawTriangle(triX, triY, triWidth, triHeight, pointUp);
+            // Offset every other row
+            if (y % 2 === 1) {
+                triX += triWidth * 0.5;
             }
-        }
-    }
 
-    drawHexagon(centerX, centerY, radius) {
-        beginShape();
-        for (let i = 0; i < 6; i++) {
-            let x = centerX + this.hexVertices[i].x * radius * 100;
-            let y = centerY + this.hexVertices[i].y * radius * 100;
-            vertex(x, y);
-        }
-        endShape(CLOSE);
-    }
+            let cellValue = gridSystem.getCell(x, y);
+            this.setCellColor(cellValue);
 
-    drawTriangle(centerX, centerY, width, height, pointUp) {
-        if (pointUp) {
-            triangle(centerX, centerY - height * 0.5,
-                centerX - width * 0.5, centerY + height * 0.5,
-                centerX + width * 0.5, centerY + height * 0.5);
-        } else {
-            triangle(centerX, centerY + height * 0.5,
-                centerX - width * 0.5, centerY - height * 0.5,
-                centerX + width * 0.5, centerY - height * 0.5);
+            // Alternate triangle direction based on column
+            let pointUp = x % 2 === 0;
+            this.drawTriangle(triX, triY, triWidth, triHeight, pointUp);
         }
     }
 
@@ -170,13 +145,12 @@ class GridRenderer {
     // Convert screen coordinates to gridSystem coordinates
     screenToGrid(screenX, screenY) {
         let worldPos = camera.screenToWorld(screenX, screenY);
-        let cellSize = this.calculateCellSize();
 
         switch (gridSystem.type) {
             case 'hex':
-                return this.screenToHexGrid(worldPos, cellSize);
+                return this.screenToHexGrid(worldPos, this.cellSize);
             case 'tri':
-                return this.screenToTriangleGrid(worldPos, cellSize);
+                return this.screenToTriangleGrid(worldPos, this.cellSize);
         }
         return null;
     }
