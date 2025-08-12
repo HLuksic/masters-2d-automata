@@ -7,6 +7,7 @@ let interface;
 let controlPressed = false;
 let isPlaying = false;
 let needsFullRedraw = true;
+let generation = 0;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
 let outlineColor = [136, 136, 136];
@@ -26,7 +27,7 @@ let gameRules = {
 
 function setup() {
     let canvas = createCanvas(canvasContainerWidth, 900);
-    infoLayer = createGraphics(100, 100);
+    infoLayer = createGraphics(150, 100);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
     infoLayer.textFont('Courier New');
@@ -53,6 +54,7 @@ function draw() {
 
     infoLayer.background(150);
     infoLayer.text(`FPS: ${floor(frameRate())}`, 20, 20);
+    infoLayer.text(`Gen: ${generation}`, 20, 40);
     image(infoLayer, 0, 0);
 }
 
@@ -98,6 +100,7 @@ function mousePressed() {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
             }
+            generation = 0;
         }
     }
 }
@@ -116,6 +119,7 @@ function mouseDragged() {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
             }
         }
+        generation = 0;
     }
 }
 

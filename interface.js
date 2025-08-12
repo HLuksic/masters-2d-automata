@@ -117,11 +117,13 @@ class Interface {
         this.clearBtn.mousePressed(() => {
             gridSystem.cells = gridSystem.createEmptyGrid();
             triggerRedraw();
+            generation = 0;
         });
 
         this.randomizeBtn.mousePressed(() => {
             gridSystem.randomizeCells();
             triggerRedraw();
+            generation = 0;
         });
 
         this.birthMinSlider.input(() => {
@@ -377,6 +379,7 @@ class Interface {
         this.hexBtn.removeClass('active');
         this.triBtn.removeClass('active');
         gridSystem.type === 'hex' ? this.hexBtn.addClass('active') : this.triBtn.addClass('active');
+        generation = 0; // Reset generation on grid change
 
         // Show/hide triangle neighborhood controls
         if (gridSystem.type === 'tri') {

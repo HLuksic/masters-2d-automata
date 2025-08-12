@@ -213,6 +213,7 @@ class GridSystem {
     }
 
     step() {
+        generation++;
         let newGrid = this.buffer;
         let oldGrid = this.cells;
         this.changedCells = []; // track changed positions

@@ -30,6 +30,7 @@ class GridRenderer {
         }
         
         needsFullRedraw = false;
+        gridSystem.changedCells = [];
         camera.unapply();
         image(this.buffer, 0, 0); // Draw buffer to main canvas
     }
@@ -44,7 +45,7 @@ class GridRenderer {
 
     setCellColor(cellValue) {
         if (ui.showOutline) {
-            stroke(outlineColor[0], outlineColor[1], outlineColor[2]);
+            stroke(outlineColor);
             strokeWeight(cellValue === 0 ? 0.5 : 0.3);
         } else {
             noStroke();
@@ -52,11 +53,11 @@ class GridRenderer {
 
         if (cellValue === 0) {
             // Dead cell
-            fill(deadColor[0], deadColor[1], deadColor[2]);
+            fill(deadColor);
         } else {
             // Living cell - interpolate between dead and alive colors based on phase
             if (gameRules.cellPhases === 1) {
-                fill(aliveColor[0], aliveColor[1], aliveColor[2]);
+                fill(aliveColor);
             } else {
                 let t = map(cellValue, 0, gameRules.cellPhases, 0, 1);
                 let r = lerp(deadColor[0], aliveColor[0], t);
@@ -158,17 +159,48 @@ class GridRenderer {
     screenToHexGrid(worldPos, cellSize) {
         let hexRadius = cellSize * 0.5;
         let hexWidth = hexRadius * 2;
-        let hexHeight = hexRadius * sqrt(3);
+        let hexHeight = hexRadius * Math.sqrt(3);
 
         let startX = -gridSystem.width * hexWidth * 0.75 / 2;
         let startY = -gridSystem.height * hexHeight / 2;
-        // Account for column offset
-        let offsetY = (Math.floor((worldPos.x - startX) / (hexWidth * 0.75)) % 2) * (hexHeight * 0.5);
-        let approxX = Math.round((worldPos.x - startX) / (hexWidth * 0.75));
-        let approxY = Math.round((worldPos.y - startY - offsetY) / hexHeight);
 
-        if (approxX >= 0 && approxX < gridSystem.width && approxY >= 0 && approxY < gridSystem.height) {
-            return { x: approxX, y: approxY };
+        // Convert to axial coordinates first
+        let q = (worldPos.x - startX) * (2/3) / hexRadius;
+        let r = (-worldPos.x + startX) / (3 * hexRadius) + (worldPos.y - startY) * Math.sqrt(3) / (3 * hexRadius);
+
+        // Convert axial to cube coordinates
+        let cubeX = q;
+        let cubeZ = r;
+        let cubeY = -cubeX - cubeZ;
+
+        // Round cube coordinates
+        let roundX = Math.round(cubeX);
+        let roundY = Math.round(cubeY);
+        let roundZ = Math.round(cubeZ);
+
+        // Handle rounding errors by adjusting the coordinate with largest error
+        let xDiff = Math.abs(roundX - cubeX);
+        let yDiff = Math.abs(roundY - cubeY);
+        let zDiff = Math.abs(roundZ - cubeZ);
+
+        if (xDiff > yDiff && xDiff > zDiff) {
+            roundX = -roundY - roundZ;
+        } else if (yDiff > zDiff) {
+            roundY = -roundX - roundZ;
+        } else {
+            roundZ = -roundX - roundY;
+        }
+
+        // Convert back to offset coordinates (what you're using)
+        let col = roundX;
+        let row = roundZ + (roundX - (roundX & 1)) / 2;
+
+        // Adjust for your grid's coordinate system
+        let gridX = col;
+        let gridY = row;
+
+        if (gridX >= 0 && gridX < gridSystem.width && gridY >= 0 && gridY < gridSystem.height) {
+            return { x: gridX, y: gridY };
         }
         return null;
     }
