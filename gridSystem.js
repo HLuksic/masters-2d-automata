@@ -81,9 +81,57 @@ class GridSystem {
     constructor() {
         this.width = 50;
         this.height = 40;
-        this.type = 'hex'; // 'hex', 'triangle'
+        this.type = 'hex'; // 'hex', 'tri'
         this.cells = this.createEmptyGrid();
+        this.hexNeighborsByDistance = this.precomputeHexNeighborsByDistance(3);
     }
+
+    precomputeHexNeighborsByDistance(maxDist) {
+        const results = Array.from({ length: maxDist + 1 }, () =>
+            Array.from({ length: this.height }, () =>
+                Array(this.width)
+            )
+        );
+
+        const coordKey = (x, y) => `${x},${y}`;
+
+        for (let dist = 1; dist <= maxDist; dist++) {
+            for (let y = 0; y < this.height; y++) {
+                for (let x = 0; x < this.width; x++) {
+                    if (dist === 1) {
+                        const isEvenCol = x % 2 === 0;
+                        const baseOffsets = HEX_NEIGHBOR_MAP[isEvenCol];
+                        results[dist][y][x] = baseOffsets.map(([dx, dy]) => [x + dx, y + dy]);
+                    } else {
+                        const visited = new Set([coordKey(x, y)]);
+                        let currentRing = [[x, y]];
+
+                        for (let d = 1; d <= dist; d++) {
+                            const nextRing = [];
+                            for (const [cx, cy] of currentRing) {
+                                const isEvenCol = cx % 2 === 0;
+                                const baseOffsets = HEX_NEIGHBOR_MAP[isEvenCol];
+                                for (const [dx, dy] of baseOffsets) {
+                                    const nx = cx + dx;
+                                    const ny = cy + dy;
+                                    const key = coordKey(nx, ny);
+                                    if (!visited.has(key)) {
+                                        visited.add(key);
+                                        nextRing.push([nx, ny]);
+                                    }
+                                }
+                            }
+                            currentRing = nextRing;
+                        }
+                        results[dist][y][x] = currentRing;
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
+
 
     createEmptyGrid() {
         let grid = Array(this.height).fill(null)
@@ -110,6 +158,7 @@ class GridSystem {
         this.width = newWidth;
         this.height = newHeight;
         this.cells = this.createEmptyGrid();
+        this.hexNeighborsByDistance = this.precomputeHexNeighborsByDistance(3);
 
         // Copy over existing cells where possible
         for (let y = 0; y < Math.min(oldGrid.length, this.height); y++) {
@@ -124,14 +173,14 @@ class GridSystem {
     }
 
     getCell(x, y) {
-        if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-            return this.cells[y][x];
-        }
-        return 0;
+        // if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
+        //     return this.cells[y][x];
+        // }
+        // return 0;
 
-        // x = ((x % this.width) + this.width) % this.width;
-        // y = ((y % this.height) + this.height) % this.height;
-        // return this.cells[y][x];
+        x = ((x % this.width) + this.width) % this.width;
+        y = ((y % this.height) + this.height) % this.height;
+        return this.cells[y][x];
     }
 
     setCell(x, y, value) {
