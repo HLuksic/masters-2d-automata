@@ -12,7 +12,7 @@ class SaveSystem {
         let state = {
             timestamp: Date.now(),
             notation: notation,
-            cells: JSON.parse(JSON.stringify(gridSystem.cells)), // Deep copy
+            cells: gridSystem.cells.map(row => Array.from(row)), // Deep copy
             image: canvasImage
         };
 
@@ -111,10 +111,7 @@ class SaveSystem {
 
         let gridType = notationParts[0] == 'h' ? 'hex' : 'tri';
         gridSystem.setType(gridType);
-        // grid is like Array(this.height).fill(null).map(() => new Uint8Array(this.width));
-        gridSystem.cells = state.cells;
-        gridSystem.height = gridSystem.cells.length;
-        gridSystem.width = gridSystem.cells[0].length;
+        gridSystem.cells = state.cells.map(row => Uint8Array.from(row));
         gridSystem.height = gridSystem.cells.length;
         gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
@@ -138,6 +135,8 @@ class SaveSystem {
         aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
         deadColor = this.hexToRgb(notationParts[colorStartIndex + 1]);
         outlineColor = this.hexToRgb(notationParts[colorStartIndex + 2]);
+
+        gridSystem.resize(gridSystem.width, gridSystem.height);
     }
 
     hexToRgb(hex) {

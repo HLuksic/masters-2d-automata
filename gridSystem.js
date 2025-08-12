@@ -83,6 +83,7 @@ class GridSystem {
         this.height = 40;
         this.type = 'hex'; // 'hex', 'tri'
         this.cells = this.createEmptyGrid();
+        this.buffer = this.createEmptyGrid(); // next state buffer
         this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
     }
 
@@ -166,6 +167,7 @@ class GridSystem {
         this.width = newWidth;
         this.height = newHeight;
         this.cells = this.createEmptyGrid();
+        this.buffer = this.createEmptyGrid();
         this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
 
         // Copy over existing cells where possible
@@ -205,7 +207,8 @@ class GridSystem {
     }
 
     step() {
-        let newGrid = this.createEmptyGrid();
+        let newGrid = this.buffer;
+        let oldGrid = this.cells;
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -234,6 +237,6 @@ class GridSystem {
             }
         }
 
-        this.cells = newGrid;
+        [this.cells, this.buffer] = [newGrid, oldGrid];
     }
 }
