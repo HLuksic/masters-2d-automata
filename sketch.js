@@ -38,12 +38,10 @@ function setup() {
 }
 
 function draw() {
-
     // Only redraw if something has changed
     if (!needsRedraw && !isPlaying) {
         return;
     }
-
 
     // Auto-step if playing
     if (isPlaying) {
@@ -53,6 +51,7 @@ function draw() {
     background(150);
     renderer.render();
     needsRedraw = false;
+
     let fps = frameRate();
     text(`FPS: ${floor(fps)}`, 20, 20);
 }

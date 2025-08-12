@@ -83,10 +83,10 @@ class GridSystem {
         this.height = 40;
         this.type = 'hex'; // 'hex', 'tri'
         this.cells = this.createEmptyGrid();
-        this.hexNeighborsByDistance = this.precomputeHexNeighborsByDistance(3);
+        this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
     }
 
-    precomputeHexNeighborsByDistance(maxDist) {
+    precomputeNeighborsByDistance(maxDist) {
         const results = Array.from({ length: maxDist + 1 }, () =>
             Array.from({ length: this.height }, () =>
                 Array(this.width)
@@ -95,43 +95,51 @@ class GridSystem {
 
         const coordKey = (x, y) => `${x},${y}`;
 
+        const getBaseNeighbors = (x, y) => {
+            if (this.type === 'hex') {
+                const isEvenCol = x % 2 === 0;
+                return HEX_NEIGHBOR_MAP[isEvenCol].map(([dx, dy]) => [x + dx, y + dy]);
+            } else if (this.type === 'tri') {
+                const isEvenRow = y % 2 === 0;
+                const pointUp = x % 2 === 0;
+                const key = `${isEvenRow}-${pointUp}`;
+                const offsets = gameRules.triangleNeighborhoodType === 'vonNeumann'
+                    ? NEUMANN_TRIANGLE_NEIGHBOR_MAP[key]
+                    : MOORE_TRIANGLE_NEIGHBOR_MAP[key];
+                return offsets.map(([dx, dy]) => [x + dx, y + dy]);
+            }
+            return [];
+        };
+
         for (let dist = 1; dist <= maxDist; dist++) {
             for (let y = 0; y < this.height; y++) {
                 for (let x = 0; x < this.width; x++) {
-                    if (dist === 1) {
-                        const isEvenCol = x % 2 === 0;
-                        const baseOffsets = HEX_NEIGHBOR_MAP[isEvenCol];
-                        results[dist][y][x] = baseOffsets.map(([dx, dy]) => [x + dx, y + dy]);
-                    } else {
-                        const visited = new Set([coordKey(x, y)]);
-                        let currentRing = [[x, y]];
+                    const visited = new Set();
+                    const neighbors = [];
+                    let currentRing = [[x, y]];
+                    visited.add(coordKey(x, y));
 
-                        for (let d = 1; d <= dist; d++) {
-                            const nextRing = [];
-                            for (const [cx, cy] of currentRing) {
-                                const isEvenCol = cx % 2 === 0;
-                                const baseOffsets = HEX_NEIGHBOR_MAP[isEvenCol];
-                                for (const [dx, dy] of baseOffsets) {
-                                    const nx = cx + dx;
-                                    const ny = cy + dy;
-                                    const key = coordKey(nx, ny);
-                                    if (!visited.has(key)) {
-                                        visited.add(key);
-                                        nextRing.push([nx, ny]);
-                                    }
+                    for (let d = 1; d <= dist; d++) {
+                        const nextRing = [];
+                        for (const [cx, cy] of currentRing) {
+                            for (const [nx, ny] of getBaseNeighbors(cx, cy)) {
+                                const key = coordKey(nx, ny);
+                                if (!visited.has(key)) {
+                                    visited.add(key);
+                                    nextRing.push([nx, ny]);
+                                    neighbors.push([nx, ny]); // accumulate all distances
                                 }
                             }
-                            currentRing = nextRing;
                         }
-                        results[dist][y][x] = currentRing;
+                        currentRing = nextRing;
                     }
+
+                    results[dist][y][x] = neighbors;
                 }
             }
         }
         return results;
     }
-
-
 
     createEmptyGrid() {
         let grid = Array(this.height).fill(null)
@@ -158,7 +166,7 @@ class GridSystem {
         this.width = newWidth;
         this.height = newHeight;
         this.cells = this.createEmptyGrid();
-        this.hexNeighborsByDistance = this.precomputeHexNeighborsByDistance(3);
+        this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
 
         // Copy over existing cells where possible
         for (let y = 0; y < Math.min(oldGrid.length, this.height); y++) {
@@ -172,12 +180,7 @@ class GridSystem {
         this.type = newType;
     }
 
-    getCell(x, y) {
-        // if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-        //     return this.cells[y][x];
-        // }
-        // return 0;
-
+    getCell(x, y) { 
         x = ((x % this.width) + this.width) % this.width;
         y = ((y % this.height) + this.height) % this.height;
         return this.cells[y][x];
@@ -189,103 +192,9 @@ class GridSystem {
         }
     }
 
-    getHexNeighbors(x, y) {
-        const isEvenCol = x % 2 === 0;
-
-        return HEX_NEIGHBOR_MAP[isEvenCol].map(([dx, dy]) => [x + dx, y + dy]);
-    }
-
-    getTriangleNeighbors(x, y) {
-        const isEvenRow = y % 2 === 0;
-        const pointUp = x % 2 === 0;
-        const key = `${isEvenRow}-${pointUp}`;
-
-        const offsets = gameRules.triangleNeighborhoodType === 'vonNeumann' ? NEUMANN_TRIANGLE_NEIGHBOR_MAP[key] : MOORE_TRIANGLE_NEIGHBOR_MAP[key];
-        return offsets.map(([dx, dy]) => [x + dx, y + dy]);
-    }
-
-    getHexNeighborsAtDistance(x, y, maxDistance) {
-        if (maxDistance === 1) {
-            return this.getHexNeighbors(x, y);
-        }
-
-        const visited = new Set();
-        const result = [];
-        let currentRing = [[x, y]];
-
-        const coordKey = (x, y) => `${x},${y}`;
-        visited.add(coordKey(x, y));
-
-        for (let distance = 1; distance <= maxDistance; distance++) {
-            const nextRing = [];
-
-            for (const [cx, cy] of currentRing) {
-                for (const [nx, ny] of this.getHexNeighbors(cx, cy)) {
-                    const key = coordKey(nx, ny);
-                    if (!visited.has(key)) {
-                        visited.add(key);
-                        nextRing.push([nx, ny]);
-                        result.push([nx, ny]);
-                    }
-                }
-            }
-
-            currentRing = nextRing;
-        }
-
-        return result;
-    }
-
-    getTriangleNeighborsAtDistance(x, y, maxDistance) {
-        if (maxDistance === 1) {
-            return this.getTriangleNeighbors(x, y);
-        }
-
-        const visited = new Set();
-        const result = [];
-        let currentRing = [[x, y]];
-
-        const coordKey = (x, y) => `${x},${y}`;
-        visited.add(coordKey(x, y));
-
-        for (let distance = 1; distance <= maxDistance; distance++) {
-            const nextRing = [];
-
-            for (const [cx, cy] of currentRing) {
-                for (const [nx, ny] of this.getTriangleNeighbors(cx, cy)) {
-                    const key = coordKey(nx, ny);
-                    if (!visited.has(key)) {
-                        visited.add(key);
-                        nextRing.push([nx, ny]);
-                        result.push([nx, ny]);
-                    }
-                }
-            }
-
-            currentRing = nextRing;
-        }
-
-        return result;
-    }
-
-    getNeighborsAtDistance(x, y, distance) {
-        if (this.type === 'hex') {
-            return this.getHexNeighborsAtDistance(x, y, distance);
-        } else if (this.type === 'tri') {
-            return this.getTriangleNeighborsAtDistance(x, y, distance);
-        }
-        return [];
-    }
-
-    isCellAlive(x, y) {
-        return this.getCell(x, y) > 0;
-    }
-
     countLiveNeighbors(x, y) {
-        let neighbors = this.getNeighborsAtDistance(x, y, gameRules.neighborDistance);
-
         let count = 0;
-        for (let [nx, ny] of neighbors) {
+        for (let [nx, ny] of this.neighborsByDistance[gameRules.neighborDistance][y][x]) {
             count += this.getCell(nx, ny);
         }
 
@@ -299,9 +208,8 @@ class GridSystem {
             for (let x = 0; x < this.width; x++) {
                 let liveNeighbors = this.countLiveNeighbors(x, y);
                 let currentCell = this.getCell(x, y);
-                let isAlive = this.isCellAlive(x, y);
 
-                if (isAlive) {
+                if (currentCell > 0) {
                     // Live cell - check survival rules
                     if (liveNeighbors >= gameRules.survivalMin && liveNeighbors <= gameRules.survivalMax) {
                         // Cell survives - reset to full life

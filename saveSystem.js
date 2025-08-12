@@ -111,7 +111,10 @@ class SaveSystem {
 
         let gridType = notationParts[0] == 'h' ? 'hex' : 'tri';
         gridSystem.setType(gridType);
-        gridSystem.cells = JSON.parse(JSON.stringify(state.cells)); // Deep copy
+        // grid is like Array(this.height).fill(null).map(() => new Uint8Array(this.width));
+        gridSystem.cells = state.cells;
+        gridSystem.height = gridSystem.cells.length;
+        gridSystem.width = gridSystem.cells[0].length;
         gridSystem.height = gridSystem.cells.length;
         gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
