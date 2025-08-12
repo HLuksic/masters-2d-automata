@@ -181,8 +181,11 @@ class GridSystem {
     }
 
     getCell(x, y) { 
-        x = ((x % this.width) + this.width) % this.width;
-        y = ((y % this.height) + this.height) % this.height;
+        // Wrap edges
+        if (x <= 3 || x >= this.width - 3 || y <= 3 || y >= this.height - 3) {
+            x = ((x % this.width) + this.width) % this.width;
+            y = ((y % this.height) + this.height) % this.height;
+        }
         return this.cells[y][x];
     }
 
@@ -192,7 +195,7 @@ class GridSystem {
         }
     }
 
-    countLiveNeighbors(x, y) {
+    sumNeighbors(x, y) {
         let count = 0;
         for (let [nx, ny] of this.neighborsByDistance[gameRules.neighborDistance][y][x]) {
             count += this.getCell(nx, ny);
@@ -206,7 +209,7 @@ class GridSystem {
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                let liveNeighbors = this.countLiveNeighbors(x, y);
+                let liveNeighbors = this.sumNeighbors(x, y);
                 let currentCell = this.getCell(x, y);
 
                 if (currentCell > 0) {
