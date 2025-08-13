@@ -38,7 +38,7 @@ function setup() {
     triggerRedraw();
 
     gridSystem = new GridSystem();
-    saveSystem = new SaveSystem();  
+    saveSystem = new SaveSystem();
     ui = new Interface();
     camera = new Camera();
     renderer = new GridRenderer();
@@ -100,6 +100,7 @@ function mousePressed() {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
             }
+            console.log(gridPos);
             generation = 0;
         }
     }

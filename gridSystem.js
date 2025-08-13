@@ -11,6 +11,7 @@ const NEUMANN_TRIANGLE_NEIGHBOR_MAP = {
 };
 
 const MOORE_TRIANGLE_NEIGHBORS_UP_EVEN = [
+    // Side neighbors (3)
     [-1, 0], [1, 0], // left, right
     [-1, 1], // top
     // Point neighbors (9)
@@ -163,13 +164,17 @@ class GridSystem {
         }
     }
 
+    updateNeighborhood() {
+        this.neighborsByDistance = this.precomputeNeighborsByDistance(gameRules.neighborDistance);
+    }
+
     resize(newWidth, newHeight) {
         let oldGrid = this.cells;
         this.width = newWidth;
         this.height = newHeight;
         this.cells = this.createEmptyGrid();
         this.buffer = this.createEmptyGrid();
-        this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
+        this.updateNeighborhood();
 
         // Copy over existing cells where possible
         for (let y = 0; y < Math.min(oldGrid.length, this.height); y++) {
@@ -181,9 +186,10 @@ class GridSystem {
 
     setType(newType) {
         this.type = newType;
+        this.updateNeighborhood();
     }
 
-    getCell(x, y) { 
+    getCell(x, y) {
         // Wrap edges
         if (x <= 3 || x >= this.width - 3 || y <= 3 || y >= this.height - 3) {
             x = ((x % this.width) + this.width) % this.width;

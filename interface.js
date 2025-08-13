@@ -179,18 +179,21 @@ class Interface {
             gameRules.neighborDistance = 1;
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+            gridSystem.updateNeighborhood();
         });
 
         this.ring2Radio.mousePressed(() => {
             gameRules.neighborDistance = 2;
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+            gridSystem.updateNeighborhood();
         });
 
         this.ring3Radio.mousePressed(() => {
             gameRules.neighborDistance = 3;
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+            gridSystem.updateNeighborhood();
         });
 
         // Triangle neighborhood type radio events
@@ -198,12 +201,14 @@ class Interface {
             gameRules.triangleNeighborhoodType = 'vonNeumann';
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+            gridSystem.updateNeighborhood();
         });
 
         this.mooreRadio.mousePressed(() => {
             gameRules.triangleNeighborhoodType = 'moore';
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+            gridSystem.updateNeighborhood();
         });
 
         this.deadColorPicker.input(() => {
@@ -237,11 +242,13 @@ class Interface {
                 return;
             }
             name = name.trim();
-            // if (saveSystem.stateExists(name)) {
-            //     if (!confirm(`State "${name}" already exists. Overwrite?`)) {
-            //         return;
-            //     }
-            // }
+
+            if (saveSystem.stateExists(name)) {
+                if (!confirm(`State "${name}" already exists. Overwrite?`)) {
+                    return;
+                }
+            }
+
             saveSystem.saveState(name, this.notation);
             saveSystem.loadStateList();
             this.addStateEventListeners();
