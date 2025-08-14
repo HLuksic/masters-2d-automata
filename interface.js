@@ -243,11 +243,11 @@ class Interface {
             }
             name = name.trim();
 
-            if (saveSystem.stateExists(name)) {
-                if (!confirm(`State "${name}" already exists. Overwrite?`)) {
-                    return;
-                }
-            }
+            // if (saveSystem.stateExists(name)) {
+            //     if (!confirm(`State "${name}" already exists. Overwrite?`)) {
+            //         return;
+            //     }
+            // }
 
             saveSystem.saveState(name, this.notation);
             saveSystem.loadStateList();

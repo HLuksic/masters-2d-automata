@@ -2,7 +2,6 @@ class GridRenderer {
     constructor() {
         this.hexVertices = this.precomputeHexVertices();
         this.cellSize = 12;
-        this.buffer = createGraphics(width, height); // Off-screen buffer
     }
 
     precomputeHexVertices() {
@@ -32,7 +31,6 @@ class GridRenderer {
         needsFullRedraw = false;
         gridSystem.changedCells = [];
         camera.unapply();
-        image(this.buffer, 0, 0); // Draw buffer to main canvas
     }
 
     lerpColor(color1, color2, amount) {

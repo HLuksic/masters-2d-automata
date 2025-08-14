@@ -102,6 +102,7 @@ class SaveSystem {
 
         // Parse notation and set values
         let notationParts = state.notation.split('/');
+        console.log(notationParts);
         if (notationParts.length < 6) {
             console.error('Invalid notation format:', state.notation);
             return false;
@@ -116,10 +117,10 @@ class SaveSystem {
         gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
-        gameRules.birthMin = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[0] : notationParts[3]);
-        gameRules.birthMax = parseInt(notationParts[3].length > 1 ? notationParts[3].split('-')[1] : notationParts[3]);
-        gameRules.survivalMin = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[0] : notationParts[4]);
-        gameRules.survivalMax = parseInt(notationParts[4].length > 1 ? notationParts[4].split('-')[1] : notationParts[4]);
+        gameRules.birthMin = parseInt(notationParts[3].includes('-') ? notationParts[3].split('-')[0] : notationParts[3]);
+        gameRules.birthMax = parseInt(notationParts[3].includes('-') ? notationParts[3].split('-')[1] : notationParts[3]);
+        gameRules.survivalMin = parseInt(notationParts[4].includes('-') ? notationParts[4].split('-')[0] : notationParts[4]);
+        gameRules.survivalMax = parseInt(notationParts[4].includes('-') ? notationParts[4].split('-')[1] : notationParts[4]);
 
         // Handle triangle neighborhood type (if present)
         let colorStartIndex = 5;

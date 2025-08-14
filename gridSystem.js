@@ -191,7 +191,8 @@ class GridSystem {
 
     getCell(x, y) {
         // Wrap edges
-        if (x <= 3 || x >= this.width - 3 || y <= 3 || y >= this.height - 3) {
+        const dist = gameRules.neighborDistance;
+        if (x < dist || x >= this.width - dist || y < dist || y >= this.height - dist) {
             x = ((x % this.width) + this.width) % this.width;
             y = ((y % this.height) + this.height) % this.height;
         }

@@ -100,7 +100,6 @@ function mousePressed() {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
             }
-            console.log(gridPos);
             generation = 0;
         }
     }
