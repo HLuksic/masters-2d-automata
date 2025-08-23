@@ -47,6 +47,11 @@ class SaveSystem {
         }
     }
 
+    stateExists(name) {
+        let states = this.getAllStates();
+        return states.hasOwnProperty(name);
+    }
+
     deleteAllStates() {
         try {
             localStorage.removeItem(this.storageKey);

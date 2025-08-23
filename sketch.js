@@ -13,6 +13,7 @@ let aliveColor = [0, 0, 0];
 let outlineColor = [136, 136, 136];
 let canvasContainer = document.getElementById('canvas-container');
 let canvasContainerWidth = canvasContainer.clientWidth;
+let canvasContainerHeight = canvasContainer.clientHeight;
 let infoLayer;
 
 let gameRules = {
@@ -58,7 +59,8 @@ function draw() {
 
 function windowResized() {
     canvasContainerWidth = canvasContainer.clientWidth;
-    resizeCanvas(canvasContainerWidth, 900);
+    canvasContainerHeight = canvasContainer.clientHeight;
+    resizeCanvas(canvasContainerWidth, canvasContainerHeight);
     triggerRedraw();
 }
 

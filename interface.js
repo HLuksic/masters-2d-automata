@@ -10,14 +10,6 @@ class Interface {
         this.randomizeBtn = null;
         this.hexBtn = null;
         this.triBtn = null;
-        // this.birthMinSlider = null;
-        // this.birthMaxSlider = null;
-        // this.survivalMinSlider = null;
-        // this.survivalMaxSlider = null;
-        // this.birthMinValue = null;
-        // this.birthMaxValue = null;
-        // this.survivalMinValue = null;
-        // this.survivalMaxValue = null;
         this.birthSlider = null;
         this.survivalSlider = null;
         this.cellPhasesSlider = null;
@@ -55,10 +47,6 @@ class Interface {
 
         this.gridWidthSlider = select('#gridWidth');
         this.gridHeightSlider = select('#gridHeight');
-        // this.birthMinSlider = select('#birthMin');
-        // this.birthMaxSlider = select('#birthMax');
-        // this.survivalMinSlider = select('#survivalMin');
-        // this.survivalMaxSlider = select('#survivalMax');
         this.ring1Radio = select('#ring1');
         this.ring2Radio = select('#ring2');
         this.ring3Radio = select('#ring3');
@@ -142,54 +130,6 @@ class Interface {
             generation = 0;
         });
 
-        // this.birthMinSlider.input(() => {
-        //     gameRules.birthMin = parseInt(this.birthMinSlider.value());
-        //     this.birthMinValue.html(gameRules.birthMin);
-        //     // Ensure min <= max
-        //     if (gameRules.birthMin > gameRules.birthMax) {
-        //         gameRules.birthMax = gameRules.birthMin;
-        //         this.birthMaxSlider.value(gameRules.birthMax);
-        //         this.birthMaxValue.html(gameRules.birthMax);
-        //     }
-        //     this.updateRuleNotation();
-        // });
-
-        // this.birthMaxSlider.input(() => {
-        //     gameRules.birthMax = parseInt(this.birthMaxSlider.value());
-        //     this.birthMaxValue.html(gameRules.birthMax);
-        //     // Ensure min <= max
-        //     if (gameRules.birthMax < gameRules.birthMin) {
-        //         gameRules.birthMin = gameRules.birthMax;
-        //         this.birthMinSlider.value(gameRules.birthMin);
-        //         this.birthMinValue.html(gameRules.birthMin);
-        //     }
-        //     this.updateRuleNotation();
-        // });
-
-        // this.survivalMinSlider.input(() => {
-        //     gameRules.survivalMin = parseInt(this.survivalMinSlider.value());
-        //     this.survivalMinValue.html(gameRules.survivalMin);
-        //     // Ensure min <= max
-        //     if (gameRules.survivalMin > gameRules.survivalMax) {
-        //         gameRules.survivalMax = gameRules.survivalMin;
-        //         this.survivalMaxSlider.value(gameRules.survivalMax);
-        //         this.survivalMaxValue.html(gameRules.survivalMax);
-        //     }
-        //     this.updateRuleNotation();
-        // });
-
-        // this.survivalMaxSlider.input(() => {
-        //     gameRules.survivalMax = parseInt(this.survivalMaxSlider.value());
-        //     this.survivalMaxValue.html(gameRules.survivalMax);
-        //     // Ensure min <= max
-        //     if (gameRules.survivalMax < gameRules.survivalMin) {
-        //         gameRules.survivalMin = gameRules.survivalMax;
-        //         this.survivalMinSlider.value(gameRules.survivalMin);
-        //         this.survivalMinValue.html(gameRules.survivalMin);
-        //     }
-        //     this.updateRuleNotation();
-        // });
-
         // Neighborhood radio events
         this.ring1Radio.mousePressed(() => {
             gameRules.neighborDistance = 1;
@@ -259,11 +199,11 @@ class Interface {
             }
             name = name.trim();
 
-            // if (saveSystem.stateExists(name)) {
-            //     if (!confirm(`State "${name}" already exists. Overwrite?`)) {
-            //         return;
-            //     }
-            // }
+            if (saveSystem.stateExists(name)) {
+                if (!confirm(`State "${name}" already exists. Overwrite?`)) {
+                    return;
+                }
+            }
 
             saveSystem.saveState(name, this.notation);
             saveSystem.loadStateList();
@@ -285,6 +225,10 @@ class Interface {
 
         loadButtons.forEach(button => {
             button.addEventListener('click', (e) => {
+                if (!confirm(`Are you sure you want to load state "${e.target.getAttribute('data-name')}"?`)) {
+                    return;
+                }
+
                 let name = e.target.getAttribute('data-name');
                 let state = saveSystem.loadState(name);
                 if (state) {
@@ -300,6 +244,10 @@ class Interface {
 
         deleteButtons.forEach(button => {
             button.addEventListener('click', (e) => {
+                if (!confirm(`Are you sure you want to delete state "${e.target.getAttribute('data-name')}"?`)) {
+                    return;
+                }
+
                 let name = e.target.getAttribute('data-name');
                 if (saveSystem.deleteState(name)) {
                     saveSystem.loadStateList(); // Refresh the list
@@ -462,6 +410,7 @@ class MultiSlider {
         this.selectedValues = new Set(initialValues);
         this.track = document.getElementById(containerId + 'Track');
         this.preview = document.getElementById(containerId + 'Preview');
+        this.tooltip = document.getElementById(containerId + 'Tooltip');
 
         this.isDragging = false;
         this.lastSelection = null;
@@ -498,6 +447,35 @@ class MultiSlider {
         this.track.addEventListener('mouseup', () => this.handleMouseUp());
         this.track.addEventListener('mouseleave', () => this.handleMouseUp());
         this.track.addEventListener('selectstart', (e) => e.preventDefault());
+        this.track.addEventListener('mouseenter', () => this.showTooltip());
+        this.track.addEventListener('mousemove', (e) => this.updateTooltip(e));
+    }
+
+    showTooltip() {
+        this.tooltip.classList.add('visible');
+    }
+
+    hideTooltip() {
+        this.tooltip.classList.remove('visible');
+    }
+
+    updateTooltip(e) {
+        const value = this.getValueFromEvent(e);
+        if (value === null) {
+            this.hideTooltip();
+            return;
+        }
+
+        const rect = this.track.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+
+        // Update tooltip content and position
+        const isSelected = this.selectedValues.has(value);
+        this.tooltip.textContent = `${value} ${isSelected ? '✓' : ''}`;
+        this.tooltip.style.left = `${x}px`;
+
+        // Make sure tooltip stays visible
+        this.tooltip.classList.add('visible');
     }
 
     handleMouseDown(e) {
@@ -521,6 +499,8 @@ class MultiSlider {
     }
 
     handleMouseMove(e) {
+        this.updateTooltip(e);
+
         if (!this.isDragging) return;
 
         const value = this.getValueFromEvent(e);
@@ -539,6 +519,7 @@ class MultiSlider {
     handleMouseUp() {
         this.isDragging = false;
         this.dragMode = null;
+        this.hideTooltip();
     }
 
     getValueFromEvent(e) {

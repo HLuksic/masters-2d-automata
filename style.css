@@ -12,13 +12,14 @@ body {
     margin: auto;
     gap: 20px;
     width: 100%;
+    height: 96vh;
 }
 
 #savedStates {
-    max-height: 1200px;
     grid-column: 1;
     grid-row: 1 / 3;
     width: 350px;
+    height: auto;
     padding: 15px;
     background: white;
     border-radius: 8px;
@@ -70,7 +71,7 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: space-evenly;
 }
 
 .control-group {
@@ -114,6 +115,7 @@ button.active {
 }
 
 .multi-slider {
+    width: 800px;
     margin: 10px 0;
     padding: 15px;
     border: 1px solid #ddd;
@@ -161,8 +163,12 @@ button.active {
     background: #13bb2a;
 }
 
+.multi-slider-segment.selected:hover {
+    background: #74e082;
+}
+
 .multi-slider-segment:hover {
-    background: #13bb2a;
+    background: #5baaff;
 }
 
 .multi-slider-labels {
@@ -171,4 +177,55 @@ button.active {
     font-size: 10px;
     color: #666;
     margin-top: 3px;
+}
+
+.multi-slider-controls {
+    margin-top: 8px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.control-btn:hover {
+    background: #f0f0f0;
+}
+
+.multi-slider-tooltip {
+    position: absolute;
+    background: rgba(129, 22, 22, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translateX(-50%);
+    top: -35px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.multi-slider-tooltip.visible {
+    opacity: 1;
+}
+
+.multi-slider-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.8);
 }

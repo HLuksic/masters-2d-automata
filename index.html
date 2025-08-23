@@ -67,12 +67,18 @@
                             <span>Birth rule:</span>
                             <span class="multi-slider-preview" id="birthPreview">Birth: 2</span>
                         </div>
-                        <div class="multi-slider-track" id="birthTrack"></div>
+                        <div class="multi-slider-track" id="birthTrack">
+                            <div class="multi-slider-tooltip" id="birthTooltip"></div>
+                        </div>
                         <div class="multi-slider-labels">
                             <span>0</span><span>6</span><span>12</span><span>18</span>
                         </div>
+                        <div class="multi-slider-controls">
+                            <button class="control-btn" onclick="ui.birthSlider.clear()">Clear</button>
+                        </div>
                     </div>
                 </div>
+
 
                 <div class="control-group">
                     <div class="multi-slider" id="survivalSlider">
@@ -80,13 +86,20 @@
                             <span>Survival rule:</span>
                             <span class="multi-slider-preview" id="survivalPreview">Survival: 2,3</span>
                         </div>
-                        <div class="multi-slider-track" id="survivalTrack"></div>
+                        <div class="multi-slider-track" id="survivalTrack">
+                            <div class="multi-slider-tooltip" id="survivalTooltip"></div>
+                        </div>
                         <div class="multi-slider-labels">
                             <span>0</span><span>6</span><span>12</span><span>18</span>
                         </div>
+                        <div class="multi-slider-controls">
+                            <button class="control-btn" onclick="ui.survivalSlider.clear()">Clear</button>
+                        </div>
                     </div>
                 </div>
+            </div>
 
+            <div id="simulation-controls-2">
                 <div class="control-group" id="triangleNeighborhoodType" style="display: none;">
                     <label>Triangle Neighborhood:</label>
                     <input type="radio" name="triangleNeighborhood" id="vonNeumann" checked> Von Neumann (3)
