@@ -223,7 +223,7 @@ class GridSystem {
         generation++;
         let newGrid = this.buffer;
         let oldGrid = this.cells;
-        this.changedCells = []; // track changed positions
+        this.changedCells = [];
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -232,13 +232,15 @@ class GridSystem {
                 let newValue;
 
                 if (currentCell > 0) {
-                    if (liveNeighbors >= gameRules.survivalMin && liveNeighbors <= gameRules.survivalMax) {
+                    // Check if neighbor count is in survival numbers array
+                    if (gameRules.survivalNumbers.includes(liveNeighbors)) {
                         newValue = gameRules.cellPhases;
                     } else {
                         newValue = Math.max(0, currentCell - 1);
                     }
                 } else {
-                    if (liveNeighbors >= gameRules.birthMin && liveNeighbors <= gameRules.birthMax) {
+                    // Check if neighbor count is in birth numbers array
+                    if (gameRules.birthNumbers.includes(liveNeighbors)) {
                         newValue = gameRules.cellPhases;
                     } else {
                         newValue = 0;

@@ -97,16 +97,43 @@ class SaveSystem {
         }
     }
 
+    parseRuleString(ruleString) {
+        if (!ruleString || ruleString.trim() === '') return [];
+
+        // Handle both old format (min-max or single number) and new format (dot-separated)
+        const numbers = new Set();
+
+        // New format - dots and ranges
+        const parts = ruleString.split('.').map(s => s.trim());
+        for (const part of parts) {
+            if (part.includes('-')) {
+                const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                if (!isNaN(start) && !isNaN(end)) {
+                    for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+                        numbers.add(i);
+                    }
+                }
+            } else {
+                const num = parseInt(part);
+                if (!isNaN(num)) {
+                    numbers.add(num);
+                }
+            }
+        }
+
+        return Array.from(numbers).sort((a, b) => a - b);
+    }
+
     applyState(state) {
         if (!state) return false;
 
         // Parse notation and set values
         let notationParts = state.notation.split('/');
-        console.log(notationParts);
         if (notationParts.length < 6) {
             console.error('Invalid notation format:', state.notation);
             return false;
         }
+
         // Remove first char from each part
         notationParts = notationParts.map(part => part.substring(1));
 
@@ -117,10 +144,9 @@ class SaveSystem {
         gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
-        gameRules.birthMin = parseInt(notationParts[3].includes('-') ? notationParts[3].split('-')[0] : notationParts[3]);
-        gameRules.birthMax = parseInt(notationParts[3].includes('-') ? notationParts[3].split('-')[1] : notationParts[3]);
-        gameRules.survivalMin = parseInt(notationParts[4].includes('-') ? notationParts[4].split('-')[0] : notationParts[4]);
-        gameRules.survivalMax = parseInt(notationParts[4].includes('-') ? notationParts[4].split('-')[1] : notationParts[4]);
+
+        gameRules.birthNumbers = this.parseRuleString(notationParts[3]);
+        gameRules.survivalNumbers = this.parseRuleString(notationParts[4]);
 
         // Handle triangle neighborhood type (if present)
         let colorStartIndex = 5;
@@ -138,6 +164,8 @@ class SaveSystem {
         outlineColor = this.hexToRgb(notationParts[colorStartIndex + 2]);
 
         gridSystem.resize(gridSystem.width, gridSystem.height);
+
+        return true;
     }
 
     hexToRgb(hex) {

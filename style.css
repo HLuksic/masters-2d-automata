@@ -112,3 +112,63 @@ button.active {
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
+
+.multi-slider {
+    margin: 10px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: #fafafa;
+}
+
+.multi-slider-label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.multi-slider-preview {
+    font-family: monospace;
+    background: #e8e8e8;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.multi-slider-track {
+    position: relative;
+    height: 30px;
+    background: #e0e0e0;
+    border-radius: 15px;
+    margin: 10px 0;
+    cursor: pointer;
+    user-select: none;
+    overflow: hidden;
+}
+
+.multi-slider-segment {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: #007bff;
+    transition: background-color 0.15s;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.multi-slider-segment.selected {
+    background: #13bb2a;
+}
+
+.multi-slider-segment:hover {
+    background: #13bb2a;
+}
+
+.multi-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #666;
+    margin-top: 3px;
+}

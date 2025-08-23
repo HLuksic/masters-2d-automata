@@ -10,14 +10,16 @@ class Interface {
         this.randomizeBtn = null;
         this.hexBtn = null;
         this.triBtn = null;
-        this.birthMinSlider = null;
-        this.birthMaxSlider = null;
-        this.survivalMinSlider = null;
-        this.survivalMaxSlider = null;
-        this.birthMinValue = null;
-        this.birthMaxValue = null;
-        this.survivalMinValue = null;
-        this.survivalMaxValue = null;
+        // this.birthMinSlider = null;
+        // this.birthMaxSlider = null;
+        // this.survivalMinSlider = null;
+        // this.survivalMaxSlider = null;
+        // this.birthMinValue = null;
+        // this.birthMaxValue = null;
+        // this.survivalMinValue = null;
+        // this.survivalMaxValue = null;
+        this.birthSlider = null;
+        this.survivalSlider = null;
         this.cellPhasesSlider = null;
         this.cellPhasesValue = null;
         this.ring1Radio = null;
@@ -37,12 +39,26 @@ class Interface {
     }
 
     initUI() {
+        const maxNeighbors = this.getMaxNeighborsForDistance(gridSystem.type, gameRules.neighborDistance);
+
+        this.birthSlider = new MultiSlider('birth', 0, maxNeighbors, gameRules.birthNumbers);
+        this.birthSlider.onChange = (values) => {
+            gameRules.birthNumbers = values;
+            this.updateRuleNotation();
+        };
+
+        this.survivalSlider = new MultiSlider('survival', 0, maxNeighbors, gameRules.survivalNumbers);
+        this.survivalSlider.onChange = (values) => {
+            gameRules.survivalNumbers = values;
+            this.updateRuleNotation();
+        };
+
         this.gridWidthSlider = select('#gridWidth');
         this.gridHeightSlider = select('#gridHeight');
-        this.birthMinSlider = select('#birthMin');
-        this.birthMaxSlider = select('#birthMax');
-        this.survivalMinSlider = select('#survivalMin');
-        this.survivalMaxSlider = select('#survivalMax');
+        // this.birthMinSlider = select('#birthMin');
+        // this.birthMaxSlider = select('#birthMax');
+        // this.survivalMinSlider = select('#survivalMin');
+        // this.survivalMaxSlider = select('#survivalMax');
         this.ring1Radio = select('#ring1');
         this.ring2Radio = select('#ring2');
         this.ring3Radio = select('#ring3');
@@ -126,53 +142,53 @@ class Interface {
             generation = 0;
         });
 
-        this.birthMinSlider.input(() => {
-            gameRules.birthMin = parseInt(this.birthMinSlider.value());
-            this.birthMinValue.html(gameRules.birthMin);
-            // Ensure min <= max
-            if (gameRules.birthMin > gameRules.birthMax) {
-                gameRules.birthMax = gameRules.birthMin;
-                this.birthMaxSlider.value(gameRules.birthMax);
-                this.birthMaxValue.html(gameRules.birthMax);
-            }
-            this.updateRuleNotation();
-        });
+        // this.birthMinSlider.input(() => {
+        //     gameRules.birthMin = parseInt(this.birthMinSlider.value());
+        //     this.birthMinValue.html(gameRules.birthMin);
+        //     // Ensure min <= max
+        //     if (gameRules.birthMin > gameRules.birthMax) {
+        //         gameRules.birthMax = gameRules.birthMin;
+        //         this.birthMaxSlider.value(gameRules.birthMax);
+        //         this.birthMaxValue.html(gameRules.birthMax);
+        //     }
+        //     this.updateRuleNotation();
+        // });
 
-        this.birthMaxSlider.input(() => {
-            gameRules.birthMax = parseInt(this.birthMaxSlider.value());
-            this.birthMaxValue.html(gameRules.birthMax);
-            // Ensure min <= max
-            if (gameRules.birthMax < gameRules.birthMin) {
-                gameRules.birthMin = gameRules.birthMax;
-                this.birthMinSlider.value(gameRules.birthMin);
-                this.birthMinValue.html(gameRules.birthMin);
-            }
-            this.updateRuleNotation();
-        });
+        // this.birthMaxSlider.input(() => {
+        //     gameRules.birthMax = parseInt(this.birthMaxSlider.value());
+        //     this.birthMaxValue.html(gameRules.birthMax);
+        //     // Ensure min <= max
+        //     if (gameRules.birthMax < gameRules.birthMin) {
+        //         gameRules.birthMin = gameRules.birthMax;
+        //         this.birthMinSlider.value(gameRules.birthMin);
+        //         this.birthMinValue.html(gameRules.birthMin);
+        //     }
+        //     this.updateRuleNotation();
+        // });
 
-        this.survivalMinSlider.input(() => {
-            gameRules.survivalMin = parseInt(this.survivalMinSlider.value());
-            this.survivalMinValue.html(gameRules.survivalMin);
-            // Ensure min <= max
-            if (gameRules.survivalMin > gameRules.survivalMax) {
-                gameRules.survivalMax = gameRules.survivalMin;
-                this.survivalMaxSlider.value(gameRules.survivalMax);
-                this.survivalMaxValue.html(gameRules.survivalMax);
-            }
-            this.updateRuleNotation();
-        });
+        // this.survivalMinSlider.input(() => {
+        //     gameRules.survivalMin = parseInt(this.survivalMinSlider.value());
+        //     this.survivalMinValue.html(gameRules.survivalMin);
+        //     // Ensure min <= max
+        //     if (gameRules.survivalMin > gameRules.survivalMax) {
+        //         gameRules.survivalMax = gameRules.survivalMin;
+        //         this.survivalMaxSlider.value(gameRules.survivalMax);
+        //         this.survivalMaxValue.html(gameRules.survivalMax);
+        //     }
+        //     this.updateRuleNotation();
+        // });
 
-        this.survivalMaxSlider.input(() => {
-            gameRules.survivalMax = parseInt(this.survivalMaxSlider.value());
-            this.survivalMaxValue.html(gameRules.survivalMax);
-            // Ensure min <= max
-            if (gameRules.survivalMax < gameRules.survivalMin) {
-                gameRules.survivalMin = gameRules.survivalMax;
-                this.survivalMinSlider.value(gameRules.survivalMin);
-                this.survivalMinValue.html(gameRules.survivalMin);
-            }
-            this.updateRuleNotation();
-        });
+        // this.survivalMaxSlider.input(() => {
+        //     gameRules.survivalMax = parseInt(this.survivalMaxSlider.value());
+        //     this.survivalMaxValue.html(gameRules.survivalMax);
+        //     // Ensure min <= max
+        //     if (gameRules.survivalMax < gameRules.survivalMin) {
+        //         gameRules.survivalMin = gameRules.survivalMax;
+        //         this.survivalMinSlider.value(gameRules.survivalMin);
+        //         this.survivalMinValue.html(gameRules.survivalMin);
+        //     }
+        //     this.updateRuleNotation();
+        // });
 
         // Neighborhood radio events
         this.ring1Radio.mousePressed(() => {
@@ -309,18 +325,44 @@ class Interface {
     }
 
     updateRuleNotation() {
-        let birthRange = gameRules.birthMin === gameRules.birthMax ? gameRules.birthMin : `${gameRules.birthMin}-${gameRules.birthMax}`;
-        let survivalRange = gameRules.survivalMin === gameRules.survivalMax ?
-            gameRules.survivalMin : `${gameRules.survivalMin}-${gameRules.survivalMax}`;
+        let birthRule = this.formatRuleForNotation(gameRules.birthNumbers);
+        let survivalRule = this.formatRuleForNotation(gameRules.survivalNumbers);
 
         let neighborhoodType = '';
         if (gridSystem.type === 'tri') {
             neighborhoodType = `/N${gameRules.triangleNeighborhoodType === 'vonNeumann' ? 'V' : 'M'}`;
         }
 
-        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRange}/S${survivalRange}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
+        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRule}/S${survivalRule}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
 
         select('#ruleCode').value(this.notation);
+    }
+
+    formatRuleForNotation(numbers) {
+        if (!numbers.length) return '';
+
+        const ranges = [];
+        let start = numbers[0];
+        let end = numbers[0];
+
+        for (let i = 1; i <= numbers.length; i++) {
+            if (i < numbers.length && numbers[i] === end + 1) {
+                end = numbers[i];
+            } else {
+                if (start === end) {
+                    ranges.push(start.toString());
+                } else if (end === start + 1) {
+                    ranges.push(`${start}.${end}`);
+                } else {
+                    ranges.push(`${start}-${end}`);
+                }
+                if (i < numbers.length) {
+                    start = end = numbers[i];
+                }
+            }
+        }
+
+        return ranges.join('.');
     }
 
     getMaxNeighborsForDistance(gridType, distance) {
@@ -347,32 +389,14 @@ class Interface {
     updateNeighborhoodBounds() {
         let maxNeighbors = this.getMaxNeighborsForDistance(gridSystem.type, gameRules.neighborDistance);
 
-        // Update slider max values
-        this.birthMinSlider.attribute('max', maxNeighbors);
-        this.birthMaxSlider.attribute('max', maxNeighbors);
-        this.survivalMinSlider.attribute('max', maxNeighbors);
-        this.survivalMaxSlider.attribute('max', maxNeighbors);
+        if (this.birthSlider) {
+            this.birthSlider.updateRange(0, maxNeighbors);
+            gameRules.birthNumbers = this.birthSlider.getValues();
+        }
 
-        // Clamp current values to new bounds
-        if (gameRules.birthMin > maxNeighbors) {
-            gameRules.birthMin = maxNeighbors;
-            this.birthMinSlider.value(gameRules.birthMin);
-            this.birthMinValue.html(gameRules.birthMin);
-        }
-        if (gameRules.birthMax > maxNeighbors) {
-            gameRules.birthMax = maxNeighbors;
-            this.birthMaxSlider.value(gameRules.birthMax);
-            this.birthMaxValue.html(gameRules.birthMax);
-        }
-        if (gameRules.survivalMin > maxNeighbors) {
-            gameRules.survivalMin = maxNeighbors;
-            this.survivalMinSlider.value(gameRules.survivalMin);
-            this.survivalMinValue.html(gameRules.survivalMin);
-        }
-        if (gameRules.survivalMax > maxNeighbors) {
-            gameRules.survivalMax = maxNeighbors;
-            this.survivalMaxSlider.value(gameRules.survivalMax);
-            this.survivalMaxValue.html(gameRules.survivalMax);
+        if (this.survivalSlider) {
+            this.survivalSlider.updateRange(0, maxNeighbors);
+            gameRules.survivalNumbers = this.survivalSlider.getValues();
         }
     }
 
@@ -395,24 +419,20 @@ class Interface {
             this.triangleNeighborhoodGroup.style('display', 'none');
         }
 
-        // Update bounds
-        this.updateNeighborhoodBounds();
 
         // Update UI to reflect possible new rules
         this.gridWidthSlider.value(gridSystem.width);
         this.gridHeightSlider.value(gridSystem.height);
-        this.birthMinSlider.value(gameRules.birthMin);
-        this.birthMaxSlider.value(gameRules.birthMax);
-        this.survivalMinSlider.value(gameRules.survivalMin);
-        this.survivalMaxSlider.value(gameRules.survivalMax);
         this.cellPhasesSlider.value(gameRules.cellPhases);
         this.gridWidthValue.html(gridSystem.width);
         this.gridHeightValue.html(gridSystem.height);
-        this.birthMinValue.html(gameRules.birthMin);
-        this.birthMaxValue.html(gameRules.birthMax);
-        this.survivalMinValue.html(gameRules.survivalMin);
-        this.survivalMaxValue.html(gameRules.survivalMax);
         this.cellPhasesValue.html(gameRules.cellPhases);
+        if (this.birthSlider) {
+            this.birthSlider.setValues(gameRules.birthNumbers);
+        }
+        if (this.survivalSlider) {
+            this.survivalSlider.setValues(gameRules.survivalNumbers);
+        }
 
         // Update radio button states
         this.ring1Radio.elt.checked = (gameRules.neighborDistance === 1);
@@ -427,7 +447,206 @@ class Interface {
         this.aliveColorPicker.value(this.rgbToHex(aliveColor));
         this.outlineColorPicker.value(this.rgbToHex(outlineColor));
 
+        this.updateNeighborhoodBounds();
         this.updateRuleNotation();
         triggerRedraw();
+    }
+}
+
+class MultiSlider {
+    constructor(containerId, min = 0, max = 18, initialValues = []) {
+        this.containerId = containerId;
+        this.min = min;
+        this.max = max;
+        this.range = max - min + 1;
+        this.selectedValues = new Set(initialValues);
+        this.track = document.getElementById(containerId + 'Track');
+        this.preview = document.getElementById(containerId + 'Preview');
+
+        this.isDragging = false;
+        this.lastSelection = null;
+        this.dragMode = null;
+        this.onChange = null;
+
+        this.init();
+    }
+
+    init() {
+        this.createSegments();
+        this.updateDisplay();
+        this.attachEvents();
+    }
+
+    createSegments() {
+        this.track.innerHTML = '';
+        this.segments = [];
+
+        for (let i = 0; i <= this.max - this.min; i++) {
+            const segment = document.createElement('div');
+            segment.className = 'multi-slider-segment';
+            segment.style.left = `${(i / this.range) * 100}%`;
+            segment.style.width = `${(1 / this.range) * 100}%`;
+            segment.dataset.value = i + this.min;
+            this.track.appendChild(segment);
+            this.segments.push(segment);
+        }
+    }
+
+    attachEvents() {
+        this.track.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.track.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.track.addEventListener('mouseup', () => this.handleMouseUp());
+        this.track.addEventListener('mouseleave', () => this.handleMouseUp());
+        this.track.addEventListener('selectstart', (e) => e.preventDefault());
+    }
+
+    handleMouseDown(e) {
+        const value = this.getValueFromEvent(e);
+        if (value === null) return;
+
+        this.isDragging = true;
+
+        // Determine drag mode based on current state of clicked value
+        this.dragMode = this.selectedValues.has(value) ? 'deselect' : 'select';
+
+        // Apply the mode to the clicked value
+        if (this.dragMode === 'select') {
+            this.selectedValues.add(value);
+        } else {
+            this.selectedValues.delete(value);
+        }
+
+        this.updateDisplay();
+        e.preventDefault();
+    }
+
+    handleMouseMove(e) {
+        if (!this.isDragging) return;
+
+        const value = this.getValueFromEvent(e);
+        if (value === null) return;
+
+        // Apply the same mode determined on mousedown
+        if (this.dragMode === 'select') {
+            this.selectedValues.add(value);
+        } else if (this.dragMode === 'deselect') {
+            this.selectedValues.delete(value);
+        }
+
+        this.updateDisplay();
+    }
+
+    handleMouseUp() {
+        this.isDragging = false;
+        this.dragMode = null;
+    }
+
+    getValueFromEvent(e) {
+        const rect = this.track.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percentage = x / rect.width;
+        const value = Math.floor(percentage * this.range) + this.min;
+
+        if (value < this.min || value > this.max) return null;
+        return value;
+    }
+
+    toggleValue(value) {
+        if (this.selectedValues.has(value)) {
+            this.selectedValues.delete(value);
+        } else {
+            this.selectedValues.add(value);
+        }
+    }
+
+    selectRange(start, end) {
+        for (let i = start; i <= end; i++) {
+            this.selectedValues.add(i);
+        }
+    }
+
+    setValues(values) {
+        this.selectedValues = new Set(values);
+        this.updateDisplay();
+    }
+
+    getValues() {
+        return Array.from(this.selectedValues).sort((a, b) => a - b);
+    }
+
+    clear() {
+        this.selectedValues.clear();
+        this.updateDisplay();
+    }
+
+    updateRange(newMin, newMax) {
+        this.min = newMin;
+        this.max = newMax;
+        this.range = newMax - newMin + 1;
+
+        this.selectedValues = new Set(
+            Array.from(this.selectedValues).filter(v => v >= newMin && v <= newMax)
+        );
+
+        this.createSegments();
+        this.updateLabels();
+        this.updateDisplay();
+    }
+
+    updateLabels() {
+        const labelsContainer = document.querySelector(`#${this.containerId}Slider .multi-slider-labels`);
+        if (labelsContainer) {
+            const quarterPoints = [
+                this.min,
+                Math.floor(this.min + this.range * 0.33),
+                Math.floor(this.min + this.range * 0.66),
+                this.max
+            ];
+            labelsContainer.innerHTML = quarterPoints.map(n => `<span>${n}</span>`).join('');
+        }
+    }
+
+    updateDisplay() {
+        this.segments.forEach((segment, i) => {
+            const value = i + this.min;
+            if (this.selectedValues.has(value)) {
+                segment.classList.add('selected');
+            } else {
+                segment.classList.remove('selected');
+            }
+        });
+
+        const values = this.getValues();
+        const label = this.containerId.charAt(0).toUpperCase() + this.containerId.slice(1);
+        this.preview.textContent = `${label}: ${this.formatValues(values)}`;
+
+        this.onChange && this.onChange(values);
+    }
+
+    formatValues(values) {
+        if (values.length === 0) return '';
+
+        const ranges = [];
+        let start = values[0];
+        let end = values[0];
+
+        for (let i = 1; i <= values.length; i++) {
+            if (i < values.length && values[i] === end + 1) {
+                end = values[i];
+            } else {
+                if (start === end) {
+                    ranges.push(start.toString());
+                } else if (end === start + 1) {
+                    ranges.push(`${start},${end}`);
+                } else {
+                    ranges.push(`${start}-${end}`);
+                }
+                if (i < values.length) {
+                    start = end = values[i];
+                }
+            }
+        }
+
+        return ranges.join(',');
     }
 }

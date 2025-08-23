@@ -16,13 +16,11 @@ let canvasContainerWidth = canvasContainer.clientWidth;
 let infoLayer;
 
 let gameRules = {
-    birthMin: 2,
-    birthMax: 2,
-    survivalMin: 2,
-    survivalMax: 3,
+    birthNumbers: [2],
+    survivalNumbers: [2, 3],
     cellPhases: 1,
     neighborDistance: 1,
-    triangleNeighborhoodType: 'vonNeumann', // 'vonNeumann' or 'moore'
+    triangleNeighborhoodType: 'vonNeumann'
 };
 
 function setup() {

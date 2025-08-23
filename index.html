@@ -17,7 +17,6 @@
             <h2>Saved States</h2>
             <div class="control-group">
                 <button id="clearStates">Clear</button>
-                <button id="saveState">Save</button>
             </div>
             <ul id="statesList"></ul>
         </div>
@@ -48,26 +47,44 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Grid Type:</label>
                     <button id="hexGrid" class="active">Hexagonal</button>
                     <button id="triGrid">Triangular</button>
                 </div>
 
                 <div class="control-group">
-                    <label>Simulation:</label>
                     <button id="playPause">Play</button>
                     <button id="stepBtn">Step</button>
                     <button id="clearBtn">Clear</button>
                     <button id="randomizeBtn">Randomize</button>
+                    <button id="saveState">Save</button>
                 </div>
             </div>
 
             <div id="simulation-controls">
                 <div class="control-group">
-                    <label>Neighborhood:</label>
-                    <input type="radio" name="neighborhood" id="ring1" checked> Ring 1
-                    <input type="radio" name="neighborhood" id="ring2"> Ring 2
-                    <input type="radio" name="neighborhood" id="ring3"> Ring 3
+                    <div class="multi-slider" id="birthSlider">
+                        <div class="multi-slider-label">
+                            <span>Birth rule:</span>
+                            <span class="multi-slider-preview" id="birthPreview">Birth: 2</span>
+                        </div>
+                        <div class="multi-slider-track" id="birthTrack"></div>
+                        <div class="multi-slider-labels">
+                            <span>0</span><span>6</span><span>12</span><span>18</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="multi-slider" id="survivalSlider">
+                        <div class="multi-slider-label">
+                            <span>Survival rule:</span>
+                            <span class="multi-slider-preview" id="survivalPreview">Survival: 2,3</span>
+                        </div>
+                        <div class="multi-slider-track" id="survivalTrack"></div>
+                        <div class="multi-slider-labels">
+                            <span>0</span><span>6</span><span>12</span><span>18</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="control-group" id="triangleNeighborhoodType" style="display: none;">
@@ -77,21 +94,10 @@
                 </div>
 
                 <div class="control-group">
-                    <label>Birth rule:</label>
-                    <input type="range" id="birthMin" min="0" max="6" value="2">
-                    <span id="birthMinValue">2</span>
-                    to
-                    <input type="range" id="birthMax" min="0" max="6" value="2">
-                    <span id="birthMaxValue">2</span>
-                </div>
-
-                <div class="control-group">
-                    <label>Survival rule:</label>
-                    <input type="range" id="survivalMin" min="0" max="6" value="2">
-                    <span id="survivalMinValue">2</span>
-                    to
-                    <input type="range" id="survivalMax" min="0" max="6" value="3">
-                    <span id="survivalMaxValue">3</span>
+                    <label>Neighborhood:</label>
+                    <input type="radio" name="neighborhood" id="ring1" checked> Ring 1
+                    <input type="radio" name="neighborhood" id="ring2"> Ring 2
+                    <input type="radio" name="neighborhood" id="ring3"> Ring 3
                 </div>
 
                 <div class="control-group">
