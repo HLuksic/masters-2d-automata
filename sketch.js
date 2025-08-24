@@ -134,7 +134,7 @@ function mouseWheel(event) {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         let zoomFactor = event.delta > 0 ? 0.9 : 1.1;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
-        needsFullRedraw = true;
+        triggerRedraw();
         return false; // Prevent page scrolling
     }
 }

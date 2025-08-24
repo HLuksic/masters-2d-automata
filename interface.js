@@ -461,10 +461,10 @@ class MultiSlider {
 
     updateTooltip(e) {
         const value = this.getValueFromEvent(e);
-        if (value === null) {
-            this.hideTooltip();
-            return;
-        }
+        // if (value === null) {
+        //     this.hideTooltip();
+        //     return;
+        // }
 
         const rect = this.track.getBoundingClientRect();
         const x = e.clientX - rect.left;

@@ -90,10 +90,6 @@ class GridRenderer {
             let cellValue = gridSystem.getCell(x, y);
             this.setCellColor(cellValue);
             this.drawHexagon(hexX, hexY, hexRadius);
-            // // black, small
-            // fill(0);
-            // textSize(3);
-            // text(`${x}, ${y}`, hexX - 2.5, hexY + 1);
         }
     }
 
@@ -120,9 +116,6 @@ class GridRenderer {
             // Alternate triangle direction based on column
             let pointUp = x % 2 === 0;
             this.drawTriangle(triX, triY, triWidth, triHeight, pointUp);
-            // fill(0);
-            // textSize(2);
-            // text(`${x}, ${y}`, triX - 2, triY + 1);
         }
     }
 

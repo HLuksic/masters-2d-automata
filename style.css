@@ -23,7 +23,8 @@ body {
     padding: 15px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -55,6 +56,7 @@ body {
     margin-bottom: 10px;
     width: 85%;
     height: auto;
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
 }
 
 #stateCard img {
@@ -68,7 +70,8 @@ body {
     padding: 15px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
@@ -97,6 +100,7 @@ button {
     background: #007bff;
     color: white;
     cursor: pointer;
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
 }
 
 button:hover {
@@ -108,10 +112,9 @@ button.active {
 }
 
 #canvas-container {
-    border: 2px solid #333;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
 }
 
 .multi-slider {
@@ -121,6 +124,7 @@ button.active {
     border: 1px solid #ddd;
     border-radius: 5px;
     background: #fafafa;
+    box-shadow: 4px 4px rgba(0, 0, 0, 1);
 }
 
 .multi-slider-label {
@@ -188,20 +192,19 @@ button.active {
 
 .control-btn {
     padding: 4px 8px;
-    border: 1px solid #ccc;
-    background: white;
+    background: #007bff;
     cursor: pointer;
     border-radius: 3px;
     font-size: 11px;
 }
 
 .control-btn:hover {
-    background: #f0f0f0;
+    background: #0056b3;
 }
 
 .multi-slider-tooltip {
     position: absolute;
-    background: rgba(129, 22, 22, 0.8);
+    background: rgba(0, 0, 0, 0.8);
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
