@@ -4,6 +4,8 @@ class Interface {
         this.gridHeightSlider = null;
         this.gridWidthValue = null;
         this.gridHeightValue = null;
+        this.speedSlider = null;
+        this.speedValue = null;
         this.playPauseBtn = null;
         this.stepBtn = null;
         this.clearBtn = null;
@@ -47,6 +49,7 @@ class Interface {
 
         this.gridWidthSlider = select('#gridWidth');
         this.gridHeightSlider = select('#gridHeight');
+        this.speedSlider = select('#speed');
         this.ring1Radio = select('#ring1');
         this.ring2Radio = select('#ring2');
         this.ring3Radio = select('#ring3');
@@ -67,9 +70,9 @@ class Interface {
         this.stepBtn = select('#stepBtn');
         this.clearBtn = select('#clearBtn');
         this.randomizeBtn = select('#randomizeBtn');
-
         this.gridWidthValue = select('#gridWidthValue');
         this.gridHeightValue = select('#gridHeightValue');
+        this.speedValue = select('#speedValue');
         this.birthMinValue = select('#birthMinValue');
         this.birthMaxValue = select('#birthMaxValue');
         this.survivalMinValue = select('#survivalMinValue');
@@ -95,6 +98,11 @@ class Interface {
             this.cellPhasesValue.html(gameRules.cellPhases);
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
+        });
+
+        this.speedSlider.input(() => {
+            speed = parseInt(this.speedSlider.value());
+            this.speedValue.html(speed);
         });
 
         // Button events

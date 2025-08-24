@@ -15,6 +15,8 @@ let canvasContainer = document.getElementById('canvas-container');
 let canvasContainerWidth = canvasContainer.clientWidth;
 let canvasContainerHeight = canvasContainer.clientHeight;
 let infoLayer;
+let speed = 30;
+let lastFrameTime = 0;
 
 let gameRules = {
     birthNumbers: [2],
@@ -44,8 +46,11 @@ function setup() {
 }
 
 function draw() {
-    if (isPlaying) {
+    let targetFrameTime = 1000 / speed;
+
+    if (isPlaying && millis() - lastFrameTime > targetFrameTime) {
         gridSystem.step();
+        lastFrameTime = millis();
     }
 
     if (needsFullRedraw) background(150);

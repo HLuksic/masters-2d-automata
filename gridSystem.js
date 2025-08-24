@@ -233,7 +233,7 @@ class GridSystem {
 
                 if (currentCell > 0) {
                     // Check if neighbor count is in survival numbers array
-                    if (gameRules.survivalNumbers.includes(liveNeighbors)) {
+                    if (gameRules.survivalNumbers.includes(liveNeighbors) && currentCell == gameRules.cellPhases) {
                         newValue = gameRules.cellPhases;
                     } else {
                         newValue = Math.max(0, currentCell - 1);
