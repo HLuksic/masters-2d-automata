@@ -73,10 +73,6 @@ class Interface {
         this.gridWidthValue = select('#gridWidthValue');
         this.gridHeightValue = select('#gridHeightValue');
         this.speedValue = select('#speedValue');
-        this.birthMinValue = select('#birthMinValue');
-        this.birthMaxValue = select('#birthMaxValue');
-        this.survivalMinValue = select('#survivalMinValue');
-        this.survivalMaxValue = select('#survivalMaxValue');
 
         // Slider events
         this.gridWidthSlider.input(() => {
@@ -95,6 +91,7 @@ class Interface {
 
         this.cellPhasesSlider.input(() => {
             gameRules.cellPhases = parseInt(this.cellPhasesSlider.value());
+            generation = 0;
             this.cellPhasesValue.html(gameRules.cellPhases);
             this.updateNeighborhoodBounds();
             this.updateRuleNotation();
@@ -140,39 +137,54 @@ class Interface {
 
         // Neighborhood radio events
         this.ring1Radio.mousePressed(() => {
-            gameRules.neighborDistance = 1;
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-            gridSystem.updateNeighborhood();
+            if (gameRules.neighborDistance != 1) {
+                generation = 0;
+                gameRules.neighborDistance = 1;
+                this.updateNeighborhoodBounds();
+                this.updateRuleNotation();
+                gridSystem.updateNeighborhood();
+            }
         });
 
         this.ring2Radio.mousePressed(() => {
-            gameRules.neighborDistance = 2;
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-            gridSystem.updateNeighborhood();
+            if (gameRules.neighborDistance != 2) {
+                generation = 0;
+                gameRules.neighborDistance = 2;
+                this.updateNeighborhoodBounds();
+                this.updateRuleNotation();
+                gridSystem.updateNeighborhood();
+            }
         });
 
         this.ring3Radio.mousePressed(() => {
-            gameRules.neighborDistance = 3;
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-            gridSystem.updateNeighborhood();
+            if (gameRules.neighborDistance != 3) {
+                generation = 0;
+                gameRules.neighborDistance = 3;
+                this.updateNeighborhoodBounds();
+                this.updateRuleNotation();
+                gridSystem.updateNeighborhood();
+            }
         });
 
         // Triangle neighborhood type radio events
         this.vonNeumannRadio.mousePressed(() => {
-            gameRules.triangleNeighborhoodType = 'vonNeumann';
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-            gridSystem.updateNeighborhood();
+            if (gameRules.triangleNeighborhoodType != 'vonNeumann') {
+                generation = 0;
+                gameRules.triangleNeighborhoodType = 'vonNeumann';
+                this.updateNeighborhoodBounds();
+                this.updateRuleNotation();
+                gridSystem.updateNeighborhood();
+            }
         });
 
         this.mooreRadio.mousePressed(() => {
-            gameRules.triangleNeighborhoodType = 'moore';
-            this.updateNeighborhoodBounds();
-            this.updateRuleNotation();
-            gridSystem.updateNeighborhood();
+            if (gameRules.triangleNeighborhoodType != 'moore') {
+                generation = 0;
+                gameRules.triangleNeighborhoodType = 'moore';
+                this.updateNeighborhoodBounds();
+                this.updateRuleNotation();
+                gridSystem.updateNeighborhood();
+            }
         });
 
         this.deadColorPicker.input(() => {
@@ -487,6 +499,7 @@ class MultiSlider {
     }
 
     handleMouseDown(e) {
+        generation = 0;
         const value = this.getValueFromEvent(e);
         if (value === null) return;
 

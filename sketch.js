@@ -104,8 +104,8 @@ function mousePressed() {
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
+                generation = 0;
             }
-            generation = 0;
         }
     }
 }
@@ -123,8 +123,8 @@ function mouseDragged() {
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
             }
+            generation = 0;
         }
-        generation = 0;
     }
 }
 
@@ -137,7 +137,8 @@ function mouseReleased() {
 
 function mouseWheel(event) {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-        let zoomFactor = event.delta > 0 ? 0.9 : 1.1;
+        const zoomStep = 1.1;
+        let zoomFactor = event.delta > 0 ? 1 / zoomStep : zoomStep;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
         triggerRedraw();
         return false; // Prevent page scrolling
