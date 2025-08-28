@@ -2,7 +2,7 @@ class Camera {
     constructor() {
         this.x = 0;
         this.y = 0;
-        this.zoom = 1.7;
+        this.zoom = 1;
         this.minZoom = 0.1;
         this.maxZoom = 5;
         this.isDragging = false;
@@ -15,6 +15,14 @@ class Camera {
         translate(width / 2, height / 2);
         scale(this.zoom);
         translate(-this.x, -this.y);
+    }
+
+    applyTo(buffer) {
+        push();
+        translate(width / 2, height / 2);
+        scale(this.zoom);
+        translate(-this.x, -this.y);
+        buffer.applyMatrix();
     }
 
     unapply() {

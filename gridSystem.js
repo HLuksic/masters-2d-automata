@@ -80,12 +80,13 @@ const HEX_NEIGHBOR_MAP = {
 
 class GridSystem {
     constructor() {
-        this.width = 50;
-        this.height = 40;
-        this.type = 'hex'; // 'hex', 'tri'
+        this.width = 100;
+        this.height = 70;
+        this.type = 'hex';
+        this.population = 0;
         this.cells = this.createEmptyGrid();
-        this.buffer = this.createEmptyGrid(); // next state buffer
-        this.changedCells = []; // track changed positions
+        this.buffer = this.createEmptyGrid();
+        this.changedCells = [];
         this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
     }
 
@@ -145,8 +146,9 @@ class GridSystem {
     }
 
     createEmptyGrid() {
-        let grid = Array(this.height).fill(null)
-            .map(() => new Uint8Array(this.width));
+        this.population = 0;
+        let grid = Array(this.height).fill(null).map(() => new Uint8Array(this.width));
+
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 grid[y][x] = 0; // 0 = dead, 1+ = alive
@@ -156,16 +158,24 @@ class GridSystem {
     }
 
     randomizeCells() {
+        this.population = 0;
+
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 // Randomly set cells to random cellPhase
-                this.cells[y][x] = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * gameRules.cellPhases) + 1;
+                let value = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * gameRules.cellPhases) + 1;
+                this.cells[y][x] = value;
+                if (value > 0) this.population++;
             }
         }
     }
 
     updateNeighborhood() {
         this.neighborsByDistance = this.precomputeNeighborsByDistance(gameRules.neighborDistance);
+    }
+
+    getPopulation() {
+        return this.population;
     }
 
     resize(newWidth, newHeight) {
@@ -199,13 +209,18 @@ class GridSystem {
         return this.cells[y][x];
     }
 
+    getAllCells() {
+        return this.cells.flatMap((row, y) =>
+            Array.from(row.keys()).map(x => ({ x, y, value: row[x] }))
+        );
+    }
+
     setCell(x, y, value) {
-        if (x >= 0 && x < this.width && y >= 0 && y < this.height) {
-            if (this.cells[y][x] !== value) {
-                this.cells[y][x] = value;
-                if (!this.changedCells) this.changedCells = [];
-                this.changedCells.push({ x, y });
-            }
+        if (value !== this.cells[y][x]) {
+            if (value > 0) this.population++;
+            else this.population--;
+            this.cells[y][x] = value;
+            this.changedCells.push({ x, y });
         }
     }
 
@@ -249,12 +264,13 @@ class GridSystem {
 
                 if (newValue !== currentCell) {
                     this.changedCells.push({ x, y });
+                    if (newValue > 0) this.population++;
+                    else this.population--;
                 }
 
                 newGrid[y][x] = newValue;
             }
         }
-
         [this.cells, this.buffer] = [newGrid, oldGrid];
     }
 }

@@ -1,5 +1,6 @@
 class Interface {
     constructor() {
+        // UI elements
         this.gridWidthSlider = null;
         this.gridHeightSlider = null;
         this.gridWidthValue = null;
@@ -26,6 +27,8 @@ class Interface {
         this.aliveColorPicker = null;
         this.outlineColorPicker = null;
         this.saveStateBtn = null;
+        this.clearStatesBtn = null;
+        this.showOutlinesCheckbox = null;
         this.showOutline = false;
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
 
@@ -33,6 +36,7 @@ class Interface {
     }
 
     initUI() {
+        // Sliders and UI elements
         const maxNeighbors = this.getMaxNeighborsForDistance(gridSystem.type, gameRules.neighborDistance);
 
         this.birthSlider = new MultiSlider('birth', 0, maxNeighbors, gameRules.birthNumbers);
@@ -47,43 +51,50 @@ class Interface {
             this.updateRuleNotation();
         };
 
-        this.gridWidthSlider = select('#gridWidth');
-        this.gridHeightSlider = select('#gridHeight');
-        this.speedSlider = select('#speed');
-        this.ring1Radio = select('#ring1');
-        this.ring2Radio = select('#ring2');
-        this.ring3Radio = select('#ring3');
-        this.vonNeumannRadio = select('#vonNeumann');
-        this.mooreRadio = select('#moore');
-        this.triangleNeighborhoodGroup = select('#triangleNeighborhoodType');
-        this.cellPhasesSlider = select('#cellPhases');
-        this.cellPhasesValue = select('#cellPhasesValue');
-        this.deadColorPicker = select('#deadColor');
-        this.aliveColorPicker = select('#aliveColor');
-        this.outlineColorPicker = select('#outlineColor');
-        this.showOutlinesCheckbox = select('#showOutlines');
-        this.hexBtn = select('#hexGrid');
-        this.triBtn = select('#triGrid');
-        this.saveStateBtn = select('#saveState');
-        this.clearStatesBtn = select('#clearStates');
-        this.playPauseBtn = select('#playPause');
-        this.stepBtn = select('#stepBtn');
-        this.clearBtn = select('#clearBtn');
-        this.randomizeBtn = select('#randomizeBtn');
-        this.gridWidthValue = select('#gridWidthValue');
-        this.gridHeightValue = select('#gridHeightValue');
-        this.speedValue = select('#speedValue');
+        // Select UI elements
+        const selectors = [
+            ['gridWidthSlider', '#gridWidth'],
+            ['gridHeightSlider', '#gridHeight'],
+            ['speedSlider', '#speed'],
+            ['ring1Radio', '#ring1'],
+            ['ring2Radio', '#ring2'],
+            ['ring3Radio', '#ring3'],
+            ['vonNeumannRadio', '#vonNeumann'],
+            ['mooreRadio', '#moore'],
+            ['triangleNeighborhoodGroup', '#triangleNeighborhoodType'],
+            ['cellPhasesSlider', '#cellPhases'],
+            ['cellPhasesValue', '#cellPhasesValue'],
+            ['deadColorPicker', '#deadColor'],
+            ['aliveColorPicker', '#aliveColor'],
+            ['outlineColorPicker', '#outlineColor'],
+            ['showOutlinesCheckbox', '#showOutlines'],
+            ['hexBtn', '#hexGrid'],
+            ['triBtn', '#triGrid'],
+            ['saveStateBtn', '#saveState'],
+            ['clearStatesBtn', '#clearStates'],
+            ['playPauseBtn', '#playPause'],
+            ['stepBtn', '#stepBtn'],
+            ['clearBtn', '#clearBtn'],
+            ['randomizeBtn', '#randomizeBtn'],
+            ['gridWidthValue', '#gridWidthValue'],
+            ['gridHeightValue', '#gridHeightValue'],
+            ['speedValue', '#speedValue']
+        ];
+
+        selectors.forEach(([prop, sel]) => {
+            this[prop] = select(sel);
+        });
 
         // Slider events
         this.gridWidthSlider.input(() => {
-            let value = this.gridWidthSlider.value();
+            const value = this.gridWidthSlider.value();
             this.gridWidthValue.html(value);
             gridSystem.resize(parseInt(value), gridSystem.height);
             triggerRedraw();
         });
 
         this.gridHeightSlider.input(() => {
-            let value = this.gridHeightSlider.value();
+            const value = this.gridHeightSlider.value();
             this.gridHeightValue.html(value);
             gridSystem.resize(gridSystem.width, parseInt(value));
             triggerRedraw();
@@ -102,7 +113,7 @@ class Interface {
             this.speedValue.html(speed);
         });
 
-        // Button events
+        // Grid type buttons
         this.hexBtn.mousePressed(() => {
             this.changeGrid('hex');
             triggerRedraw();
@@ -113,15 +124,13 @@ class Interface {
             triggerRedraw();
         });
 
-        // Simulation button events
+        // Simulation controls
         this.playPauseBtn.mousePressed(() => {
             isPlaying = !isPlaying;
             this.playPauseBtn.html(isPlaying ? 'Pause' : 'Play');
         });
 
-        this.stepBtn.mousePressed(() => {
-            gridSystem.step();
-        });
+        this.stepBtn.mousePressed(() => gridSystem.step());
 
         this.clearBtn.mousePressed(() => {
             gridSystem.cells = gridSystem.createEmptyGrid();
@@ -187,6 +196,7 @@ class Interface {
             }
         });
 
+        // Color pickers and outline checkbox
         this.deadColorPicker.input(() => {
             deadColor = this.hexToRgb(this.deadColorPicker.value());
             triggerRedraw();
@@ -210,6 +220,7 @@ class Interface {
             triggerRedraw();
         });
 
+        // Save/load state buttons
         this.saveStateBtn.mousePressed(() => {
             let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
             if (!name) return;
@@ -386,7 +397,6 @@ class Interface {
         } else {
             this.triangleNeighborhoodGroup.style('display', 'none');
         }
-
 
         // Update UI to reflect possible new rules
         this.gridWidthSlider.value(gridSystem.width);

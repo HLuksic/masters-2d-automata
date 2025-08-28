@@ -149,7 +149,6 @@ class SaveSystem {
         gridSystem.width = gridSystem.cells[0].length;
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
-
         gameRules.birthNumbers = this.parseRuleString(notationParts[3]);
         gameRules.survivalNumbers = this.parseRuleString(notationParts[4]);
 
@@ -167,7 +166,6 @@ class SaveSystem {
         aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
         deadColor = this.hexToRgb(notationParts[colorStartIndex + 1]);
         outlineColor = this.hexToRgb(notationParts[colorStartIndex + 2]);
-
         gridSystem.resize(gridSystem.width, gridSystem.height);
 
         return true;

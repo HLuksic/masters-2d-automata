@@ -21,10 +21,10 @@ class GridRenderer {
 
         switch (gridSystem.type) {
             case 'hex':
-                this.renderHexGrid(this.cellSize, needsFullRedraw ? this.allCells() : gridSystem.changedCells);
+                this.renderHexGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.changedCells);
                 break;
             case 'tri':
-                this.renderTriangleGrid(this.cellSize, needsFullRedraw ? this.allCells() : gridSystem.changedCells);
+                this.renderTriangleGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.changedCells);
                 break;
         }
 
@@ -89,12 +89,12 @@ class GridRenderer {
 
             let cellValue = gridSystem.getCell(x, y);
             this.setCellColor(cellValue);
-            this.drawHexagon(hexX, hexY, hexRadius);
+            this.drawHexagon(hexX, hexY, hexRadius * 1.02);
         }
     }
 
     renderTriangleGrid(cellSize, cellsToDraw) {
-        let triHeight = cellSize * 0.866; // sqrt(3)/2 for equilateral triangle
+        let triHeight = cellSize * 0.866;
         let triWidth = cellSize;
         let rowHeight = triHeight;
 
@@ -141,7 +141,6 @@ class GridRenderer {
         }
     }
 
-    // Convert screen coordinates to gridSystem coordinates
     screenToGrid(screenX, screenY) {
         let worldPos = camera.screenToWorld(screenX, screenY);
 
@@ -189,7 +188,7 @@ class GridRenderer {
             roundZ = -roundX - roundY;
         }
 
-        // Convert back to offset coordinates (what you're using)
+        // Convert back to offset coordinates
         let col = roundX;
         let row = roundZ + (roundX - (roundX & 1)) / 2;
 
@@ -204,8 +203,8 @@ class GridRenderer {
     }
 
     screenToTriangleGrid(worldPos, cellSize) {
-        // check collision, account for flipped triangles by row, no offset
-        let triHeight = cellSize * 0.866; // sqrt(3)/2
+        // Check collision, account for flipped triangles by row, no offset
+        let triHeight = cellSize * 0.866;
         let triWidth = cellSize;
         let rowHeight = triHeight;
         let startX = -gridSystem.width * triWidth * 0.5 / 2;

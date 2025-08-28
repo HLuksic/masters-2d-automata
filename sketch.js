@@ -32,7 +32,6 @@ function setup() {
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
     infoLayer.textFont('Courier New');
-    infoLayer.fill(0);
     infoLayer.textAlign(LEFT, TOP);
     infoLayer.textSize(16);
 
@@ -55,10 +54,10 @@ function draw() {
 
     if (needsFullRedraw) background(150);
     renderer.render();
-
     infoLayer.background(150);
     infoLayer.text(`FPS: ${floor(frameRate())}`, 20, 20);
     infoLayer.text(`Gen: ${generation}`, 20, 40);
+    infoLayer.text(`Pop: ${gridSystem.getPopulation()}`, 20, 60);
     image(infoLayer, 0, 0);
 }
 
