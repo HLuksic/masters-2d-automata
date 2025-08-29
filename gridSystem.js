@@ -211,12 +211,6 @@ class GridSystem {
         return this.cells[y][x];
     }
 
-    getAllCells() {
-        return this.cells.flatMap((row, y) =>
-            Array.from(row.keys()).map(x => ({ x, y, value: row[x] }))
-        );
-    }
-
     getLiveCells() {
         const liveCells = [];
         for (let y = 0; y < this.height; y++) {
@@ -227,14 +221,6 @@ class GridSystem {
             }
         }
         return liveCells;
-    }
-
-    getChangedCells() {
-        return this.changedCells;
-    }
-
-    clearChangedCells() {
-        this.changedCells = [];
     }
 
     setCell(x, y, value) {
@@ -260,7 +246,6 @@ class GridSystem {
         generation++;
         let newGrid = this.buffer;
         let oldGrid = this.cells;
-        this.changedCells = [];
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
@@ -285,7 +270,6 @@ class GridSystem {
                 }
 
                 if (newValue !== currentCell) {
-                    this.changedCells.push({ x, y });
                     if (newValue == 0 && currentCell > 0) this.population--;
                     else if (newValue > 0 && currentCell == 0) this.population++;
                 }

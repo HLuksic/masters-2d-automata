@@ -7,7 +7,7 @@ let saveSystem;
 let interface;
 let controlPressed = false;
 let isPlaying = false;
-let needsFullRedraw = true;
+let needsRender = true;
 let generation = 0;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
@@ -46,7 +46,11 @@ function draw() {
         gridSystem.step();
         lastFrameTime = millis();
     }
-    gridRenderer.render();
+
+    if (needsRender || isPlaying) {
+        gridRenderer.render();
+        needsRender = false;
+    }
 
     // Create HTML overlay instead of WebGL text
     updateHTMLOverlay();
@@ -60,8 +64,7 @@ function updateHTMLOverlay() {
         overlay.style.position = 'absolute';
         overlay.style.top = '10px';
         overlay.style.left = '10px';
-        overlay.style.backgroundColor = `rgb(0, 0, 0, 0)`;
-        overlay.style.color = 'black';
+        overlay.style.color = 'rgb(150, 150, 150)';
         overlay.style.padding = '10px';
         overlay.style.fontFamily = 'monospace';
         overlay.style.fontSize = '16px';
@@ -84,6 +87,7 @@ function windowResized() {
 
     if (gridRenderer) {
         gridRenderer.resize();
+        needsRender = false;
     }
 }
 
@@ -109,6 +113,7 @@ function mousePressed() {
         if (controlPressed) {
             cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
+            needsRender = true;
         } else {
             let gridPos = gridRenderer.screenToGrid(mouseX, mouseY);
 
@@ -118,6 +123,7 @@ function mousePressed() {
                 } else if (mouseButton === RIGHT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, 0);
                 }
+                needsRender = true;
                 generation = 0;
             }
         }
@@ -127,6 +133,7 @@ function mousePressed() {
 function mouseDragged() {
     if (controlPressed && camera.isDragging) {
         camera.updateDrag(mouseX, mouseY);
+        needsRender = true;
     } else if (!controlPressed) {
         let gridPos = gridRenderer.screenToGrid(mouseX, mouseY);
 
@@ -136,6 +143,7 @@ function mouseDragged() {
             } else if (mouseButton === RIGHT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, 0);
             }
+            needsRender = true;
             generation = 0;
         }
     }
@@ -153,6 +161,7 @@ function mouseWheel(event) {
         const zoomStep = 1.1;
         let zoomFactor = event.delta > 0 ? 1 / zoomStep : zoomStep;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
+        needsRender = true;
         return false;
     }
 }
