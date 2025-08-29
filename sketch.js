@@ -2,6 +2,7 @@
 let gridSystem;
 let camera;
 let renderer;
+let webglRenderer;
 let saveSystem;
 let interface;
 let controlPressed = false;
@@ -18,6 +19,7 @@ let infoLayer;
 let speed = 30;
 let lastFrameTime = 0;
 
+
 let gameRules = {
     birthNumbers: [2],
     survivalNumbers: [2, 3],
@@ -27,13 +29,9 @@ let gameRules = {
 };
 
 function setup() {
-    let canvas = createCanvas(canvasContainerWidth, 900);
-    infoLayer = createGraphics(120, 80);
+    let canvas = createCanvas(canvasContainerWidth, 900, WEBGL);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
-    infoLayer.textFont('Courier New');
-    infoLayer.textAlign(LEFT, TOP);
-    infoLayer.textSize(16);
 
     triggerRedraw();
 
@@ -41,7 +39,7 @@ function setup() {
     saveSystem = new SaveSystem();
     ui = new Interface();
     camera = new Camera();
-    renderer = new GridRenderer();
+    webglRenderer = new WebGLRenderer();
 }
 
 function draw() {
@@ -52,19 +50,43 @@ function draw() {
         lastFrameTime = millis();
     }
 
-    if (needsFullRedraw) background(150);
-    infoLayer.background(150);
-    infoLayer.text(`FPS: ${floor(frameRate())}`, 20, 20);
-    infoLayer.text(`Gen: ${generation}`, 20, 40);
-    infoLayer.text(`Pop: ${gridSystem.getPopulation()}`, 20, 60);
-    image(infoLayer, 0, 0);
-    renderer.render();
+    webglRenderer.render();
+
+    // Draw info overlay using WebGL context
+    const gl = webglRenderer.gl;
+    gl.disable(gl.DEPTH_TEST);
+
+    // Create simple overlay quad for info display
+    const overlayCanvas = document.createElement('canvas');
+    overlayCanvas.width = 120;
+    overlayCanvas.height = 80;
+    const ctx = overlayCanvas.getContext('2d');
+
+    ctx.fillStyle = 'rgb(150, 150, 150)';
+    ctx.fillRect(0, 0, 120, 80);
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Courier New';
+    ctx.fillText(`FPS: ${floor(frameRate())}`, 20, 20);
+    ctx.fillText(`Gen: ${generation}`, 20, 40);
+    ctx.fillText(`Pop: ${gridSystem.getPopulation()}`, 20, 60);
+
+    // Draw the overlay canvas directly to screen
+    const canvas = document.querySelector('canvas');
+    const overlayCtx = canvas.getContext('2d');
+    if (overlayCtx) {
+        overlayCtx.drawImage(overlayCanvas, 0, 0);
+    }
 }
 
 function windowResized() {
     canvasContainerWidth = canvasContainer.clientWidth;
     canvasContainerHeight = canvasContainer.clientHeight;
     resizeCanvas(canvasContainerWidth, canvasContainerHeight);
+
+    if (webglRenderer) {
+        webglRenderer.resize();
+    }
+
     triggerRedraw();
 }
 
@@ -95,8 +117,8 @@ function mousePressed() {
             cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
         } else {
-            // Handle cell placement/erasure
-            let gridPos = renderer.screenToGrid(mouseX, mouseY);
+            let gridPos = webglRenderer.screenToGrid(mouseX, mouseY);
+
             if (gridPos) {
                 if (mouseButton === LEFT) {
                     gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
@@ -114,8 +136,8 @@ function mouseDragged() {
         camera.updateDrag(mouseX, mouseY);
         triggerRedraw();
     } else if (!controlPressed) {
-        // Continue placing/erasing cells while dragging
-        let gridPos = renderer.screenToGrid(mouseX, mouseY);
+        let gridPos = webglRenderer.screenToGrid(mouseX, mouseY);
+
         if (gridPos) {
             if (mouseButton === LEFT) {
                 gridSystem.setCell(gridPos.x, gridPos.y, gameRules.cellPhases);
@@ -140,7 +162,7 @@ function mouseWheel(event) {
         let zoomFactor = event.delta > 0 ? 1 / zoomStep : zoomStep;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
         triggerRedraw();
-        return false; // Prevent page scrolling
+        return false;
     }
 }
 
