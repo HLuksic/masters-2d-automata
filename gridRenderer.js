@@ -157,17 +157,15 @@ class WebGLRenderer {
         if (!this.gl) return;
 
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-        this.gl.clearColor(150 / 255, 150 / 255, 150 / 255, 1.0);
+        this.gl.clearColor(deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255, 1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-
-        const cellsToDraw = needsFullRedraw ? this.getAllCells() : this.getAllCells();
 
         switch (gridSystem.type) {
             case 'hex':
-                this.renderHexGrid(cellsToDraw);
+                this.renderHexGrid(gridSystem.getLiveCells());
                 break;
             case 'tri':
-                this.renderTriangleGrid(cellsToDraw);
+                this.renderTriangleGrid(gridSystem.getLiveCells());
                 break;
         }
 

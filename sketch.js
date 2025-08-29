@@ -62,7 +62,7 @@ function draw() {
     overlayCanvas.height = 80;
     const ctx = overlayCanvas.getContext('2d');
 
-    ctx.fillStyle = 'rgb(150, 150, 150)';
+    ctx.fillStyle = `rgb(${deadColor})`;
     ctx.fillRect(0, 0, 120, 80);
     ctx.fillStyle = 'black';
     ctx.font = '16px Courier New';

@@ -217,6 +217,18 @@ class GridSystem {
         );
     }
 
+    getLiveCells() {
+        const liveCells = [];
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.cells[y][x] > 0) {
+                    liveCells.push({ x, y, value: this.cells[y][x] });
+                }
+            }
+        }
+        return liveCells;
+    }
+
     getChangedCells() {
         return this.changedCells;
     }
