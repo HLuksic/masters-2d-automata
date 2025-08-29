@@ -217,6 +217,14 @@ class GridSystem {
         );
     }
 
+    getChangedCells() {
+        return this.changedCells;
+    }
+
+    clearChangedCells() {
+        this.changedCells = [];
+    }
+
     setCell(x, y, value) {
         if (value !== this.cells[y][x]) {
             if (value > 0) this.population++;

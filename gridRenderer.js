@@ -21,15 +21,15 @@ class GridRenderer {
 
         switch (gridSystem.type) {
             case 'hex':
-                this.renderHexGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.changedCells);
+                this.renderHexGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.getChangedCells());
                 break;
             case 'tri':
-                this.renderTriangleGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.changedCells);
+                this.renderTriangleGrid(this.cellSize, needsFullRedraw ? gridSystem.getAllCells() : gridSystem.getChangedCells());
                 break;
         }
 
         needsFullRedraw = false;
-        gridSystem.changedCells = [];
+        gridSystem.clearChangedCells();
         camera.unapply();
     }
 
