@@ -115,6 +115,7 @@ button.active {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 4px 4px rgba(0, 0, 0, 1);
+    position: relative;
 }
 
 .multi-slider {

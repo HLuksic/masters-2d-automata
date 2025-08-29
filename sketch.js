@@ -2,7 +2,7 @@
 let gridSystem;
 let camera;
 let renderer;
-let webglRenderer;
+let gridRenderer;
 let saveSystem;
 let interface;
 let controlPressed = false;
@@ -11,7 +11,6 @@ let needsFullRedraw = true;
 let generation = 0;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
-let outlineColor = [136, 136, 136];
 let canvasContainer = document.getElementById('canvas-container');
 let canvasContainerWidth = canvasContainer.clientWidth;
 let canvasContainerHeight = canvasContainer.clientHeight;
@@ -33,13 +32,11 @@ function setup() {
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
 
-    triggerRedraw();
-
     gridSystem = new GridSystem();
     saveSystem = new SaveSystem();
     ui = new Interface();
     camera = new Camera();
-    webglRenderer = new WebGLRenderer();
+    gridRenderer = new GridRenderer();
 }
 
 function draw() {
@@ -49,33 +46,35 @@ function draw() {
         gridSystem.step();
         lastFrameTime = millis();
     }
+    gridRenderer.render();
 
-    webglRenderer.render();
+    // Create HTML overlay instead of WebGL text
+    updateHTMLOverlay();
+}
 
-    // Draw info overlay using WebGL context
-    const gl = webglRenderer.gl;
-    gl.disable(gl.DEPTH_TEST);
-
-    // Create simple overlay quad for info display
-    const overlayCanvas = document.createElement('canvas');
-    overlayCanvas.width = 120;
-    overlayCanvas.height = 80;
-    const ctx = overlayCanvas.getContext('2d');
-
-    ctx.fillStyle = `rgb(${deadColor})`;
-    ctx.fillRect(0, 0, 120, 80);
-    ctx.fillStyle = 'black';
-    ctx.font = '16px Courier New';
-    ctx.fillText(`FPS: ${floor(frameRate())}`, 20, 20);
-    ctx.fillText(`Gen: ${generation}`, 20, 40);
-    ctx.fillText(`Pop: ${gridSystem.getPopulation()}`, 20, 60);
-
-    // Draw the overlay canvas directly to screen
-    const canvas = document.querySelector('canvas');
-    const overlayCtx = canvas.getContext('2d');
-    if (overlayCtx) {
-        overlayCtx.drawImage(overlayCanvas, 0, 0);
+function updateHTMLOverlay() {
+    let overlay = document.getElementById('info-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'info-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '10px';
+        overlay.style.left = '10px';
+        overlay.style.backgroundColor = `rgb(0, 0, 0, 0)`;
+        overlay.style.color = 'black';
+        overlay.style.padding = '10px';
+        overlay.style.fontFamily = 'monospace';
+        overlay.style.fontSize = '16px';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '1000';
+        document.getElementById('canvas-container').appendChild(overlay);
     }
+
+    overlay.innerHTML = `
+        FPS: ${floor(frameRate())}<br>
+        Gen: ${generation}<br>
+        Pop: ${gridSystem.getPopulation()}
+    `;
 }
 
 function windowResized() {
@@ -83,11 +82,9 @@ function windowResized() {
     canvasContainerHeight = canvasContainer.clientHeight;
     resizeCanvas(canvasContainerWidth, canvasContainerHeight);
 
-    if (webglRenderer) {
-        webglRenderer.resize();
+    if (gridRenderer) {
+        gridRenderer.resize();
     }
-
-    triggerRedraw();
 }
 
 // Keyboard events
@@ -106,10 +103,6 @@ function keyReleased() {
     }
 }
 
-function triggerRedraw() {
-    needsFullRedraw = true;
-}
-
 // Mouse interaction
 function mousePressed() {
     if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
@@ -117,7 +110,7 @@ function mousePressed() {
             cursor('grabbing');
             camera.startDrag(mouseX, mouseY);
         } else {
-            let gridPos = webglRenderer.screenToGrid(mouseX, mouseY);
+            let gridPos = gridRenderer.screenToGrid(mouseX, mouseY);
 
             if (gridPos) {
                 if (mouseButton === LEFT) {
@@ -134,9 +127,8 @@ function mousePressed() {
 function mouseDragged() {
     if (controlPressed && camera.isDragging) {
         camera.updateDrag(mouseX, mouseY);
-        triggerRedraw();
     } else if (!controlPressed) {
-        let gridPos = webglRenderer.screenToGrid(mouseX, mouseY);
+        let gridPos = gridRenderer.screenToGrid(mouseX, mouseY);
 
         if (gridPos) {
             if (mouseButton === LEFT) {
@@ -161,7 +153,6 @@ function mouseWheel(event) {
         const zoomStep = 1.1;
         let zoomFactor = event.delta > 0 ? 1 / zoomStep : zoomStep;
         camera.zoomAt(mouseX, mouseY, zoomFactor);
-        triggerRedraw();
         return false;
     }
 }

@@ -105,10 +105,8 @@ class SaveSystem {
     parseRuleString(ruleString) {
         if (!ruleString || ruleString.trim() === '') return [];
 
-        // Handle both old format (min-max or single number) and new format (dot-separated)
         const numbers = new Set();
 
-        // New format - dots and ranges
         const parts = ruleString.split('.').map(s => s.trim());
         for (const part of parts) {
             if (part.includes('-')) {
@@ -165,7 +163,6 @@ class SaveSystem {
 
         aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
         deadColor = this.hexToRgb(notationParts[colorStartIndex + 1]);
-        outlineColor = this.hexToRgb(notationParts[colorStartIndex + 2]);
         gridSystem.resize(gridSystem.width, gridSystem.height);
 
         return true;

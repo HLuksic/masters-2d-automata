@@ -1,4 +1,4 @@
-class WebGLRenderer {
+class GridRenderer {
     constructor() {
         this.gl = null;
         this.program = null;
@@ -168,6 +168,7 @@ class WebGLRenderer {
                 this.renderTriangleGrid(gridSystem.getLiveCells());
                 break;
         }
+        this.renderGridOutline();
 
         needsFullRedraw = false;
         gridSystem.changedCells = [];
@@ -354,6 +355,88 @@ class WebGLRenderer {
         this.gl.vertexAttribDivisor(colorLoc, 1);
 
         this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 3, instanceCount);
+    }
+
+    renderGridOutline() {
+        if (!ui.showOutline) return;
+
+        const program = this.hexProgram;
+        this.gl.useProgram(program);
+
+        // Calculate grid bounds to match actual cell positioning
+        let bounds;
+        if (gridSystem.type === 'hex') {
+            const hexRadius = this.cellSize * 0.5;
+            const hexWidth = hexRadius * 2;
+            const hexHeight = hexRadius * Math.sqrt(3);
+
+            // Use the same startX/startY logic as renderHexGrid
+            const startX = -gridSystem.width * hexWidth * 0.75 / 2;
+            const startY = -gridSystem.height * hexHeight / 2;
+
+            bounds = {
+                left: startX - hexRadius,
+                right: startX + (gridSystem.width - 1) * hexWidth * 0.75 + hexRadius,
+                top: startY - hexHeight / 2,
+                bottom: startY + gridSystem.height * hexHeight
+            };
+        } else { // triangle
+            const triHeight = this.cellSize * 0.866;
+            const triWidth = this.cellSize;
+            const rowHeight = triHeight;
+
+            // Use the same startX/startY logic as renderTriangleGrid
+            const startX = -gridSystem.width * triWidth * 0.5 / 2;
+            const startY = -gridSystem.height * rowHeight / 2;
+
+            bounds = {
+                left: startX - triWidth / 2,
+                right: startX + gridSystem.width * triWidth * 0.5 + triWidth / 2,
+                top: startY - triHeight / 2,
+                bottom: startY + gridSystem.height * rowHeight - triHeight / 2
+            };
+        }
+
+        // Create outline vertices (rectangle)
+        const outlineVertices = new Float32Array([
+            bounds.left, bounds.top,     // top-left
+            bounds.right, bounds.top,    // top-right
+            bounds.right, bounds.bottom, // bottom-right
+            bounds.left, bounds.bottom   // bottom-left
+        ]);
+
+        // Create buffer for outline
+        if (!this.outlineBuffer) {
+            this.outlineBuffer = this.gl.createBuffer();
+        }
+
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.outlineBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, outlineVertices, this.gl.STATIC_DRAW);
+
+        // Set uniforms
+        const transformLoc = this.gl.getUniformLocation(program, 'u_transform');
+        const scaleLoc = this.gl.getUniformLocation(program, 'u_scale');
+
+        const transform = this.getTransformMatrix();
+        this.gl.uniformMatrix3fv(transformLoc, false, transform);
+        this.gl.uniform1f(scaleLoc, 1.0);
+
+        // Bind vertices
+        const positionLoc = this.gl.getAttribLocation(program, 'a_position');
+        this.gl.enableVertexAttribArray(positionLoc);
+        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
+
+        // Set color to outline color
+        const instancePosLoc = this.gl.getAttribLocation(program, 'a_instancePosition');
+        const colorLoc = this.gl.getAttribLocation(program, 'a_color');
+
+        // Disable instancing for the outline
+        this.gl.disableVertexAttribArray(instancePosLoc);
+        this.gl.disableVertexAttribArray(colorLoc);
+        this.gl.vertexAttrib2f(instancePosLoc, 0, 0);
+
+        // Draw outline as line loop
+        this.gl.drawArrays(this.gl.LINE_LOOP, 0, 4);
     }
 
     getCellColor(cellValue) {

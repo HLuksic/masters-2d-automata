@@ -25,11 +25,10 @@ class Interface {
         this.triangleNeighborhoodGroup = null;
         this.deadColorPicker = null;
         this.aliveColorPicker = null;
-        this.outlineColorPicker = null;
         this.saveStateBtn = null;
         this.clearStatesBtn = null;
         this.showOutlinesCheckbox = null;
-        this.showOutline = false;
+        this.showOutline = true;
         this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
 
         this.initUI();
@@ -66,7 +65,6 @@ class Interface {
             ['cellPhasesValue', '#cellPhasesValue'],
             ['deadColorPicker', '#deadColor'],
             ['aliveColorPicker', '#aliveColor'],
-            ['outlineColorPicker', '#outlineColor'],
             ['showOutlinesCheckbox', '#showOutlines'],
             ['hexBtn', '#hexGrid'],
             ['triBtn', '#triGrid'],
@@ -90,14 +88,12 @@ class Interface {
             const value = this.gridWidthSlider.value();
             this.gridWidthValue.html(value);
             gridSystem.resize(parseInt(value), gridSystem.height);
-            triggerRedraw();
         });
 
         this.gridHeightSlider.input(() => {
             const value = this.gridHeightSlider.value();
             this.gridHeightValue.html(value);
             gridSystem.resize(gridSystem.width, parseInt(value));
-            triggerRedraw();
         });
 
         this.cellPhasesSlider.input(() => {
@@ -116,12 +112,10 @@ class Interface {
         // Grid type buttons
         this.hexBtn.mousePressed(() => {
             this.changeGrid('hex');
-            triggerRedraw();
         });
 
         this.triBtn.mousePressed(() => {
             this.changeGrid('tri');
-            triggerRedraw();
         });
 
         // Simulation controls
@@ -134,13 +128,11 @@ class Interface {
 
         this.clearBtn.mousePressed(() => {
             gridSystem.cells = gridSystem.createEmptyGrid();
-            triggerRedraw();
             generation = 0;
         });
 
         this.randomizeBtn.mousePressed(() => {
             gridSystem.randomizeCells();
-            triggerRedraw();
             generation = 0;
         });
 
@@ -199,25 +191,16 @@ class Interface {
         // Color pickers and outline checkbox
         this.deadColorPicker.input(() => {
             deadColor = this.hexToRgb(this.deadColorPicker.value());
-            triggerRedraw();
             this.updateRuleNotation();
         });
 
         this.aliveColorPicker.input(() => {
             aliveColor = this.hexToRgb(this.aliveColorPicker.value());
-            triggerRedraw();
-            this.updateRuleNotation();
-        });
-
-        this.outlineColorPicker.input(() => {
-            outlineColor = this.hexToRgb(this.outlineColorPicker.value());
-            triggerRedraw();
             this.updateRuleNotation();
         });
 
         this.showOutlinesCheckbox.changed(() => {
             this.showOutline = this.showOutlinesCheckbox.checked();
-            triggerRedraw();
         });
 
         // Save/load state buttons
@@ -265,7 +248,6 @@ class Interface {
                 if (state) {
                     saveSystem.applyState(state);
                     this.refreshUI();
-                    triggerRedraw();
                 } else {
                     console.error('Failed to load state:', name);
                 }
@@ -312,7 +294,7 @@ class Interface {
             neighborhoodType = `/N${gameRules.triangleNeighborhoodType === 'vonNeumann' ? 'V' : 'M'}`;
         }
 
-        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRule}/S${survivalRule}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}/O${this.rgbToHex(outlineColor)}`;
+        this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRule}/S${survivalRule}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}`;
 
         select('#ruleCode').value(this.notation);
     }
@@ -423,11 +405,9 @@ class Interface {
 
         this.deadColorPicker.value(this.rgbToHex(deadColor));
         this.aliveColorPicker.value(this.rgbToHex(aliveColor));
-        this.outlineColorPicker.value(this.rgbToHex(outlineColor));
 
         this.updateNeighborhoodBounds();
         this.updateRuleNotation();
-        triggerRedraw();
     }
 }
 
