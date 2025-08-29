@@ -179,6 +179,7 @@ class GridSystem {
     }
 
     resize(newWidth, newHeight) {
+        this.population = 0;
         let oldGrid = this.cells;
         this.width = newWidth;
         this.height = newHeight;
@@ -190,6 +191,7 @@ class GridSystem {
         for (let y = 0; y < Math.min(oldGrid.length, this.height); y++) {
             for (let x = 0; x < Math.min(oldGrid[y].length, this.width); x++) {
                 this.cells[y][x] = oldGrid[y][x];
+                if (this.cells[y][x] > 0) this.population++;
             }
         }
     }
@@ -264,8 +266,8 @@ class GridSystem {
 
                 if (newValue !== currentCell) {
                     this.changedCells.push({ x, y });
-                    if (newValue > 0) this.population++;
-                    else this.population--;
+                    if (newValue == 0 && currentCell > 0) this.population--;
+                    else if (newValue > 0 && currentCell == 0) this.population++;
                 }
 
                 newGrid[y][x] = newValue;

@@ -28,7 +28,7 @@ let gameRules = {
 
 function setup() {
     let canvas = createCanvas(canvasContainerWidth, 900);
-    infoLayer = createGraphics(150, 100);
+    infoLayer = createGraphics(120, 80);
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
     infoLayer.textFont('Courier New');
@@ -53,12 +53,12 @@ function draw() {
     }
 
     if (needsFullRedraw) background(150);
-    renderer.render();
     infoLayer.background(150);
     infoLayer.text(`FPS: ${floor(frameRate())}`, 20, 20);
     infoLayer.text(`Gen: ${generation}`, 20, 40);
     infoLayer.text(`Pop: ${gridSystem.getPopulation()}`, 20, 60);
     image(infoLayer, 0, 0);
+    renderer.render();
 }
 
 function windowResized() {
