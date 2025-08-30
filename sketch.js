@@ -21,10 +21,10 @@ let lastFrameTime = 0;
 
 let gameRules = {
     birthNumbers: [2],
-    survivalNumbers: [2, 3],
+    survivalNumbers: [2],
     cellPhases: 1,
     neighborDistance: 1,
-    triangleNeighborhoodType: 'vonNeumann'
+    triangleNeighborhoodType: 'moore'
 };
 
 function setup() {

@@ -16,8 +16,7 @@ class GridRenderer {
         this.instanceData = new Float32Array(this.maxInstances * 2);
         this.colorData = new Float32Array(this.maxInstances * 3);
         this.hexVertices = this.precomputeHexVertices();
-        this.triUpVertices = this.precomputeTriUpVertices();
-        this.triDownVertices = this.precomputeTriDownVertices();
+        this.triVertices = this.precomputeTriVertices();
         this.init();
     }
 
@@ -113,21 +112,12 @@ class GridRenderer {
         return new Float32Array(vertices);
     }
 
-    precomputeTriUpVertices() {
+    precomputeTriVertices() {
         const height = 0.433;
         return new Float32Array([
             0, -height,      // top
             -0.5, height,    // bottom left
             0.5, height      // bottom right
-        ]);
-    }
-
-    precomputeTriDownVertices() {
-        const height = 0.433;
-        return new Float32Array([
-            0, height,       // bottom
-            -0.5, -height,   // top left
-            0.5, -height     // top right
         ]);
     }
 
@@ -140,7 +130,7 @@ class GridRenderer {
         // Triangle vertices (use up triangle, shader will flip for down)
         this.triBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.triBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.triUpVertices, this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.triVertices, this.gl.STATIC_DRAW);
 
         // Instance positions
         this.instanceBuffer = this.gl.createBuffer();
@@ -166,26 +156,12 @@ class GridRenderer {
         this.gl.clearColor(deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255, 1.0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-        switch (gridSystem.type) {
-            case 'hex':
-                this.renderHexGrid(gridSystem.getLiveCells());
-                break;
-            case 'tri':
-                this.renderTriangleGrid(gridSystem.getLiveCells());
-                break;
+        if (gridSystem.type === 'hex') {
+            this.renderHexGrid(gridSystem.getLiveCells());
+        } else if (gridSystem.type === 'tri') {
+            this.renderTriangleGrid(gridSystem.getLiveCells());
         }
         this.renderGridOutline();
-        gridSystem.changedCells = [];
-    }
-
-    getAllCells() {
-        const arr = [];
-        for (let y = 0; y < gridSystem.height; y++) {
-            for (let x = 0; x < gridSystem.width; x++) {
-                arr.push({ x, y });
-            }
-        }
-        return arr;
     }
 
     renderHexGrid(cellsToDraw) {
@@ -260,7 +236,6 @@ class GridRenderer {
 
         this.gl.drawArraysInstanced(this.gl.TRIANGLE_FAN, 0, 6, instanceCount);
     }
-
 
     renderTriangleGrid(cellsToDraw) {
         if (cellsToDraw.length === 0) return;
@@ -346,63 +321,6 @@ class GridRenderer {
         this.gl.enableVertexAttribArray(orientationLoc);
         this.gl.vertexAttribPointer(orientationLoc, 1, this.gl.FLOAT, false, 0, 0);
         this.gl.vertexAttribDivisor(orientationLoc, 1);
-
-        this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 3, instanceCount);
-    }
-
-    renderTriangleSet(triangles, program, vertexBuffer) {
-        if (triangles.length === 0) return;
-
-        this.gl.useProgram(program);
-
-        // Prepare instance data
-        let instanceCount = 0;
-        for (const tri of triangles) {
-            if (instanceCount >= this.maxInstances) break;
-
-            this.instanceData[instanceCount * 2] = tri.x;
-            this.instanceData[instanceCount * 2 + 1] = tri.y;
-
-            this.colorData[instanceCount * 3] = tri.color[0] / 255;
-            this.colorData[instanceCount * 3 + 1] = tri.color[1] / 255;
-            this.colorData[instanceCount * 3 + 2] = tri.color[2] / 255;
-
-            instanceCount++;
-        }
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.instanceData.subarray(0, instanceCount * 2));
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.colorData.subarray(0, instanceCount * 3));
-
-        // Set uniforms
-        const transformLoc = this.gl.getUniformLocation(program, 'u_transform');
-        const scaleLoc = this.gl.getUniformLocation(program, 'u_scale');
-
-        const transform = this.getTransformMatrix();
-        this.gl.uniformMatrix3fv(transformLoc, false, transform);
-        this.gl.uniform1f(scaleLoc, this.cellSize);
-
-        // Bind vertex positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
-        const positionLoc = this.gl.getAttribLocation(program, 'a_position');
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        // Bind instance positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        const instancePosLoc = this.gl.getAttribLocation(program, 'a_instancePosition');
-        this.gl.enableVertexAttribArray(instancePosLoc);
-        this.gl.vertexAttribPointer(instancePosLoc, 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(instancePosLoc, 1);
-
-        // Bind colors
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        const colorLoc = this.gl.getAttribLocation(program, 'a_color');
-        this.gl.enableVertexAttribArray(colorLoc);
-        this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(colorLoc, 1);
 
         this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 3, instanceCount);
     }

@@ -88,12 +88,14 @@ class Interface {
             const value = this.gridWidthSlider.value();
             this.gridWidthValue.html(value);
             gridSystem.resize(parseInt(value), gridSystem.height);
+            needsRender = true;
         });
 
         this.gridHeightSlider.input(() => {
             const value = this.gridHeightSlider.value();
             this.gridHeightValue.html(value);
             gridSystem.resize(gridSystem.width, parseInt(value));
+            needsRender = true;
         });
 
         this.cellPhasesSlider.input(() => {
@@ -112,10 +114,12 @@ class Interface {
         // Grid type buttons
         this.hexBtn.mousePressed(() => {
             this.changeGrid('hex');
+            needsRender = true;
         });
 
         this.triBtn.mousePressed(() => {
             this.changeGrid('tri');
+            needsRender = true;
         });
 
         // Simulation controls
@@ -124,16 +128,21 @@ class Interface {
             this.playPauseBtn.html(isPlaying ? 'Pause' : 'Play');
         });
 
-        this.stepBtn.mousePressed(() => gridSystem.step());
+        this.stepBtn.mousePressed(() => {
+            gridSystem.step();
+            needsRender = true;
+        });
 
         this.clearBtn.mousePressed(() => {
             gridSystem.cells = gridSystem.createEmptyGrid();
             generation = 0;
+            needsRender = true;
         });
 
         this.randomizeBtn.mousePressed(() => {
             gridSystem.randomizeCells();
             generation = 0;
+            needsRender = true;
         });
 
         // Neighborhood radio events
@@ -192,15 +201,18 @@ class Interface {
         this.deadColorPicker.input(() => {
             deadColor = this.hexToRgb(this.deadColorPicker.value());
             this.updateRuleNotation();
+            needsRender = true;
         });
 
         this.aliveColorPicker.input(() => {
             aliveColor = this.hexToRgb(this.aliveColorPicker.value());
             this.updateRuleNotation();
+            needsRender = true;
         });
 
         this.showOutlinesCheckbox.changed(() => {
             this.showOutline = this.showOutlinesCheckbox.checked();
+            needsRender = true;
         });
 
         // Save/load state buttons
@@ -248,6 +260,7 @@ class Interface {
                 if (state) {
                     saveSystem.applyState(state);
                     this.refreshUI();
+                    needsRender = true;
                 } else {
                     console.error('Failed to load state:', name);
                 }
