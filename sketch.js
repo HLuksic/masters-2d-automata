@@ -42,15 +42,28 @@ function setup() {
 function draw() {
     let targetFrameTime = 1000 / speed;
 
+    const startTime = performance.now();
+
+    let stepTime = 0, renderTime = 0;
     if (isPlaying && millis() - lastFrameTime > targetFrameTime) {
+        const stepStart = performance.now();
         gridSystem.step();
+        stepTime = performance.now() - stepStart;
         lastFrameTime = millis();
     }
 
     if (needsRender || isPlaying) {
+        const renderStart = performance.now();
         gridRenderer.render();
+        renderTime = performance.now() - renderStart;
         needsRender = false;
     }
+
+    const endTime = performance.now();
+    const totalTime = endTime - startTime;
+
+    // Print times in one line
+    console.log(`step: ${stepTime.toFixed(2)}ms, render: ${renderTime.toFixed(2)}ms, total: ${totalTime.toFixed(2)}ms`);
 
     // Create HTML overlay instead of WebGL text
     updateHTMLOverlay();

@@ -87,71 +87,120 @@ class GridSystem {
         this.cells = this.createEmptyGrid();
         this.buffer = this.createEmptyGrid();
         this.changedCells = [];
-        this.neighborsByDistance = this.precomputeNeighborsByDistance(3);
+        this.offsetsByDistance = this.buildOffsetRings(3);
     }
 
-    precomputeNeighborsByDistance(maxDist) {
-        const results = Array.from({ length: maxDist + 1 }, () =>
-            Array.from({ length: this.height }, () =>
-                Array(this.width)
-            )
-        );
-
-        const coordKey = (x, y) => `${x},${y}`;
-
-        const getBaseNeighbors = (x, y) => {
-            if (this.type === 'hex') {
-                const isEvenCol = x % 2 === 0;
-                return HEX_NEIGHBOR_MAP[isEvenCol].map(([dx, dy]) => [x + dx, y + dy]);
-            } else if (this.type === 'tri') {
-                const isEvenRow = y % 2 === 0;
-                const pointUp = x % 2 === 0;
-                const key = `${isEvenRow}-${pointUp}`;
-                const offsets = gameRules.triangleNeighborhoodType === 'vonNeumann'
-                    ? NEUMANN_TRIANGLE_NEIGHBOR_MAP[key]
-                    : MOORE_TRIANGLE_NEIGHBOR_MAP[key];
-                return offsets.map(([dx, dy]) => [x + dx, y + dy]);
+    buildOffsetRings(maxDist) {
+        const res = {
+            hex: { 'true': [], 'false': [] }, tri: {
+                'true-true': [], 'true-false': [], 'false-true': [], 'false-false': []
             }
-            return [];
         };
 
-        for (let dist = 1; dist <= maxDist; dist++) {
-            for (let y = 0; y < this.height; y++) {
-                for (let x = 0; x < this.width; x++) {
-                    const visited = new Set();
-                    const neighbors = [];
-                    let currentRing = [[x, y]];
-                    visited.add(coordKey(x, y));
+        const bfsHex = (startEvenCol) => {
+            const levels = Array(maxDist + 1).fill(null).map(() => []);
+            const visited = new Set(['0,0']);
+            let ring = [[0, 0]];
+            const collected = [];
 
-                    for (let d = 1; d <= dist; d++) {
-                        const nextRing = [];
-                        for (const [cx, cy] of currentRing) {
-                            for (const [nx, ny] of getBaseNeighbors(cx, cy)) {
-                                const key = coordKey(nx, ny);
-                                if (!visited.has(key)) {
-                                    visited.add(key);
-                                    nextRing.push([nx, ny]);
-                                    neighbors.push([nx, ny]); // accumulate all distances
-                                }
-                            }
+            for (let d = 1; d <= maxDist; d++) {
+                const nextRing = [];
+                for (const [cx, cy] of ring) {
+                    const absEvenCol = (startEvenCol ? 0 : 1) ^ (Math.abs(cx) & 1) ? false : true;
+                    const base = HEX_NEIGHBOR_MAP[absEvenCol];
+                    for (const [dx, dy] of base) {
+                        const nx = cx + dx, ny = cy + dy;
+                        const key = `${nx},${ny}`;
+                        if (!visited.has(key)) {
+                            visited.add(key);
+                            nextRing.push([nx, ny]);
+                            collected.push([nx, ny]);
                         }
-                        currentRing = nextRing;
                     }
-
-                    results[dist][y][x] = neighbors;
                 }
+                ring = nextRing;
+                levels[d] = collected.slice();
             }
+            return levels;
+        };
+
+        const bfsTri = (startEvenRow, startPointUp) => {
+            const levels = Array(maxDist + 1).fill(null).map(() => []);
+            const visited = new Set(['0,0']);
+            let ring = [[0, 0]];
+            const collected = [];
+
+            for (let d = 1; d <= maxDist; d++) {
+                const nextRing = [];
+                for (const [cx, cy] of ring) {
+                    const absEvenRow = (startEvenRow ? 0 : 1) ^ (Math.abs(cy) & 1) ? false : true;
+                    const absPointUp = (startPointUp ? 0 : 1) ^ (Math.abs(cx) & 1) ? false : true;
+                    const keyParity = `${absEvenRow}-${absPointUp}`;
+                    const offsets = gameRules.triangleNeighborhoodType === 'vonNeumann'
+                        ? NEUMANN_TRIANGLE_NEIGHBOR_MAP[keyParity]
+                        : MOORE_TRIANGLE_NEIGHBOR_MAP[keyParity];
+
+                    for (const [dx, dy] of offsets) {
+                        const nx = cx + dx, ny = cy + dy;
+                        const k = `${nx},${ny}`;
+                        if (!visited.has(k)) {
+                            visited.add(k);
+                            nextRing.push([nx, ny]);
+                            collected.push([nx, ny]);
+                        }
+                    }
+                }
+                ring = nextRing;
+                levels[d] = collected.slice();
+            }
+            return levels;
+        };
+
+        // Hex (precompute for both starting parities)
+        res.hex['true'] = bfsHex(true);
+        res.hex['false'] = bfsHex(false);
+
+        // Tri (precompute for all starting parity/orientation combos)
+        res.tri['true-true'] = bfsTri(true, true);
+        res.tri['true-false'] = bfsTri(true, false);
+        res.tri['false-true'] = bfsTri(false, true);
+        res.tri['false-false'] = bfsTri(false, false);
+
+        return res;
+    }
+
+    updateNeighborhood() {
+        this.offsetsByDistance = this.buildOffsetRings(gameRules.neighborDistance);
+    }
+
+    sumNeighbors(x, y) {
+        let count = 0;
+        const dist = gameRules.neighborDistance;
+
+        if (this.type === 'hex') {
+            const isEvenCol = x % 2 === 0 ? 'true' : 'false';
+            for (const [dx, dy] of this.offsetsByDistance.hex[isEvenCol][dist]) {
+                count += this.getCell(x + dx, y + dy);
+            }
+            return count;
+        } else if (this.type === 'tri') {
+            const isEvenRow = y % 2 === 0;
+            const pointUp = x % 2 === 0;
+            const key = `${isEvenRow}-${pointUp}`;
+            for (const [dx, dy] of this.offsetsByDistance.tri[key][dist]) {
+                count += this.getCell(x + dx, y + dy);
+            }
+            return count;
         }
-        return results;
+        return 0;
     }
 
     createEmptyGrid() {
         this.population = 0;
         let grid = Array(this.height).fill(null).map(() => new Uint8Array(this.width));
-
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                grid[y][x] = 0; // 0 = dead, 1+ = alive
+                grid[y][x] = 0;
             }
         }
         return grid;
@@ -159,19 +208,13 @@ class GridSystem {
 
     randomizeCells() {
         this.population = 0;
-
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                // Randomly set cells to random cellPhase
                 let value = Math.random() < 0.5 ? 0 : Math.floor(Math.random() * gameRules.cellPhases) + 1;
                 this.cells[y][x] = value;
                 if (value > 0) this.population++;
             }
         }
-    }
-
-    updateNeighborhood() {
-        this.neighborsByDistance = this.precomputeNeighborsByDistance(gameRules.neighborDistance);
     }
 
     getPopulation() {
@@ -187,7 +230,6 @@ class GridSystem {
         this.buffer = this.createEmptyGrid();
         this.updateNeighborhood();
 
-        // Copy over existing cells where possible
         for (let y = 0; y < Math.min(oldGrid.length, this.height); y++) {
             for (let x = 0; x < Math.min(oldGrid[y].length, this.width); x++) {
                 this.cells[y][x] = oldGrid[y][x];
@@ -202,7 +244,6 @@ class GridSystem {
     }
 
     getCell(x, y) {
-        // Wrap edges
         const dist = gameRules.neighborDistance;
         if (x < dist || x >= this.width - dist || y < dist || y >= this.height - dist) {
             x = ((x % this.width) + this.width) % this.width;
@@ -232,16 +273,6 @@ class GridSystem {
         }
     }
 
-
-    sumNeighbors(x, y) {
-        let count = 0;
-        for (let [nx, ny] of this.neighborsByDistance[gameRules.neighborDistance][y][x]) {
-            count += this.getCell(nx, ny);
-        }
-
-        return count;
-    }
-
     step() {
         generation++;
         let newGrid = this.buffer;
@@ -254,14 +285,12 @@ class GridSystem {
                 let newValue;
 
                 if (currentCell > 0) {
-                    // Check if neighbor count is in survival numbers array
                     if (gameRules.survivalNumbers.includes(liveNeighbors) && currentCell == gameRules.cellPhases) {
                         newValue = gameRules.cellPhases;
                     } else {
                         newValue = Math.max(0, currentCell - 1);
                     }
                 } else {
-                    // Check if neighbor count is in birth numbers array
                     if (gameRules.birthNumbers.includes(liveNeighbors)) {
                         newValue = gameRules.cellPhases;
                     } else {
