@@ -351,17 +351,16 @@ class GridRenderer {
         } else { // triangle
             const triHeight = this.cellSize * 0.866;
             const triWidth = this.cellSize;
-            const rowHeight = triHeight;
 
             // Use the same startX/startY logic as renderTriangleGrid
             const startX = -gridSystem.width * triWidth * 0.5 / 2;
-            const startY = -gridSystem.height * rowHeight / 2;
+            const startY = -gridSystem.height * triHeight * 0.5;
 
             bounds = {
-                left: startX - triWidth / 2,
-                right: startX + gridSystem.width * triWidth * 0.5 + triWidth / 2,
-                top: startY - triHeight / 2,
-                bottom: startY + gridSystem.height * rowHeight - triHeight / 2
+                left: startX - triWidth * 0.5,
+                right: startX + gridSystem.width * triWidth * 0.5 + triWidth * 0.5,
+                top: startY - triHeight * 0.5,
+                bottom: startY + gridSystem.height * triHeight - triHeight * 0.5
             };
         }
 
