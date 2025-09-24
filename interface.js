@@ -484,18 +484,14 @@ class MultiSlider {
 
     updateTooltip(e) {
         const value = this.getValueFromEvent(e);
-        // if (value === null) {
-        //     this.hideTooltip();
-        //     return;
-        // }
-
         const rect = this.track.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const x = e.clientX;
+        const y = rect.top - 30;
 
         // Update tooltip content and position
-        const isSelected = this.selectedValues.has(value);
-        this.tooltip.textContent = `${value} ${isSelected ? '✓' : ''}`;
+        this.tooltip.textContent = `${value}`;
         this.tooltip.style.left = `${x}px`;
+        this.tooltip.style.top = `${y}px`;
 
         // Make sure tooltip stays visible
         this.tooltip.classList.add('visible');

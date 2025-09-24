@@ -37,12 +37,11 @@ function setup() {
     ui = new Interface();
     camera = new Camera();
     gridRenderer = new GridRenderer();
+    updateHTMLOverlay();
 }
 
 function draw() {
     let targetFrameTime = 1000 / speed;
-
-    const startTime = performance.now();
 
     let stepTime = 0, renderTime = 0;
     if (isPlaying && millis() - lastFrameTime > targetFrameTime) {
@@ -57,16 +56,8 @@ function draw() {
         gridRenderer.render();
         renderTime = performance.now() - renderStart;
         needsRender = false;
+        updateHTMLOverlay();
     }
-
-    const endTime = performance.now();
-    const totalTime = endTime - startTime;
-
-    // Print times in one line
-    console.log(`step: ${stepTime.toFixed(2)}ms, render: ${renderTime.toFixed(2)}ms, total: ${totalTime.toFixed(2)}ms`);
-
-    // Create HTML overlay instead of WebGL text
-    updateHTMLOverlay();
 }
 
 function updateHTMLOverlay() {
