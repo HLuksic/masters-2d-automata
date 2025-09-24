@@ -1,5 +1,5 @@
 class SaveSystem {
-    constructor(gridSystem) {
+    constructor() {
         this.storageKey = 'cellularAutomataStates';
         this.loadStateList();
     }
@@ -8,11 +8,14 @@ class SaveSystem {
         // Capture canvas image
         let canvasImage = canvas.toDataURL('image/webp', 0.1);
 
+        // Serialize cells as a flat string (row-major, joined by '\n')
+        let cellString = gridSystem.cells.map(row => Array.from(row).join('')).join('\n');
+
         // Create state object
         let state = {
             timestamp: Date.now(),
             notation: notation,
-            cells: gridSystem.cells.map(row => Array.from(row)), // Deep copy
+            cells: cellString,
             image: canvasImage
         };
 
@@ -142,9 +145,11 @@ class SaveSystem {
 
         let gridType = notationParts[0] == 'h' ? 'hex' : 'tri';
         gridSystem.setType(gridType);
-        gridSystem.cells = state.cells.map(row => Uint8Array.from(row));
-        gridSystem.height = gridSystem.cells.length;
-        gridSystem.width = gridSystem.cells[0].length;
+        // Deserialize cells from string
+        let cellRows = state.cells.split('\n');
+        gridSystem.height = cellRows.length;
+        gridSystem.width = cellRows[0].length;
+        gridSystem.cells = cellRows.map(row => Uint8Array.from(row.split('').map(Number)));
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
         gameRules.birthNumbers = this.parseRuleString(notationParts[3]);
@@ -152,13 +157,10 @@ class SaveSystem {
 
         // Handle triangle neighborhood type (if present)
         let colorStartIndex = 5;
-        if (gridType === 'tri' && notationParts.length > 8) {
+        if (gridType === 'tri') {
             // New format with neighborhood type
             gameRules.triangleNeighborhoodType = notationParts[5] === 'V' ? 'vonNeumann' : 'moore';
             colorStartIndex = 6;
-        } else if (gridType === 'tri') {
-            // Old format without neighborhood type - default to Moore (original behavior)
-            gameRules.triangleNeighborhoodType = 'moore';
         }
 
         aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
