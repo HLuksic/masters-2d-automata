@@ -13,124 +13,138 @@
 
 <body>
     <div class="container">
-        <div id="savedStates">
-            <h2>Saved States</h2>
-            <div class="control-group">
-                <button id="clearStates">Clear</button>
+        <div id="savedStates" class="panel">
+            <div class="panel-header">
+                <h2>Saved States</h2>
+                <button id="toggleStates" class="panel-toggle" title="Collapse saved states">◀</button>
             </div>
-            <ul id="statesList"></ul>
+            <div class="panel-body">
+                <div class="control-group">
+                    <button id="clearStates">Clear</button>
+                </div>
+                <ul id="statesList"></ul>
+            </div>
         </div>
 
-        <div id="controls">
-            <div id="grid-controls">
-                <div class="control-group">
-                    <label>Controls:</label>
-                    <span>Left click: place | Right click: erase | Ctrl + drag: pan | Mouse wheel: zoom</span>
-                </div>
-
-                <div class="control-group">
-                    <label>Outline:</label>
-                    <input type="checkbox" id="showOutlines" checked>
-                </div>
-
-                <div class="control-group">
-                    <label>Grid Width:</label>
-                    <input type="range" id="gridWidth" min="10" max="500" value="100">
-                    <span id="gridWidthValue">100</span>
-                </div>
-
-                <div class="control-group">
-                    <label>Grid Height:</label>
-                    <input type="range" id="gridHeight" min="10" max="500" value="70">
-                    <span id="gridHeightValue">70</span>
-                </div>
-
-                <div class="control-group">
-                    <label>Speed:</label>
-                    <input type="range" id="speed" min="1" max="60" value="30">
-                    <span id="speedValue">30</span>
-                </div>
-
-                <div class="control-group">
-                    <button id="hexGrid" class="active">Hexagonal</button>
-                    <button id="triGrid">Triangular</button>
-                </div>
-
-                <div class="control-group">
-                    <button id="playPause">Play</button>
-                    <button id="stepBtn">Step</button>
-                    <button id="clearBtn">Clear</button>
-                    <button id="randomizeBtn">Randomize</button>
-                    <button id="saveState">Save</button>
-                </div>
+        <div id="controls" class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Controls</span>
+                <button id="toggleControls" class="panel-toggle" title="Collapse controls">▲</button>
             </div>
 
-            <div id="simulation-controls">
-                <div class="control-group">
-                    <div class="multi-slider" id="birthSlider">
-                        <div class="multi-slider-label">
-                            <span>Birth rule:</span>
-                            <span class="multi-slider-preview" id="birthPreview">Birth: 2</span>
-                        </div>
-                            <div class="multi-slider-track" id="birthTrack"></div>
-                            <div class="multi-slider-tooltip" id="birthTooltip">asdas</div>
-                        <div class="multi-slider-labels">
-                            <span>0</span><span>6</span><span>12</span><span>18</span>
-                        </div>
-                        <div class="multi-slider-controls">
-                            <button class="control-btn" onclick="ui.birthSlider.clear()">Clear</button>
-                        </div>
+            <div class="panel-body">
+                <div id="grid-controls">
+                    <div class="control-group">
+                        <label>Controls:</label>
+                        <span>Left click: place | Right click: erase | Ctrl + drag: pan | Mouse wheel: zoom</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Outline:</label>
+                        <input type="checkbox" id="showOutlines" checked>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Grid Width:</label>
+                        <input type="range" id="gridWidth" min="10" max="4096" value="100">
+                        <span id="gridWidthValue">100</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Grid Height:</label>
+                        <input type="range" id="gridHeight" min="10" max="4096" value="70">
+                        <span id="gridHeightValue">70</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Speed:</label>
+                        <input type="range" id="speed" min="1" max="60" value="30">
+                        <span id="speedValue">30</span>
+                    </div>
+
+                    <div class="control-group">
+                        <button id="hexGrid" class="active">Hexagonal</button>
+                        <button id="triGrid">Triangular</button>
+                    </div>
+
+                    <div class="control-group">
+                        <button id="playPause">Play</button>
+                        <button id="stepBtn">Step</button>
+                        <button id="clearBtn">Clear</button>
+                        <button id="randomizeBtn">Randomize</button>
+                        <button id="saveState">Save</button>
                     </div>
                 </div>
 
+                <div id="simulation-controls">
+                    <div class="control-group">
+                        <div class="multi-slider" id="birthSlider">
+                            <div class="multi-slider-label">
+                                <span>Birth rule:</span>
+                                <span class="multi-slider-preview" id="birthPreview">Birth: 2</span>
+                            </div>
+                            <div class="multi-slider-track" id="birthTrack"></div>
+                            <div class="multi-slider-tooltip" id="birthTooltip"></div>
+                            <div class="multi-slider-labels">
+                                <span>0</span><span>6</span><span>12</span><span>18</span>
+                            </div>
+                            <div class="multi-slider-controls">
+                                <button class="control-btn" onclick="ui.birthSlider.clear()">Clear</button>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="control-group">
-                    <div class="multi-slider" id="survivalSlider">
-                        <div class="multi-slider-label">
-                            <span>Survival rule:</span>
-                            <span class="multi-slider-preview" id="survivalPreview">Survival: 2</span>
-                        </div>  
+                    <div class="control-group">
+                        <div class="multi-slider" id="survivalSlider">
+                            <div class="multi-slider-label">
+                                <span>Survival rule:</span>
+                                <span class="multi-slider-preview" id="survivalPreview">Survival: 2</span>
+                            </div>
                             <div class="multi-slider-track" id="survivalTrack"></div>
                             <div class="multi-slider-tooltip" id="survivalTooltip"></div>
-                        <div class="multi-slider-labels">
-                            <span>0</span><span>6</span><span>12</span><span>18</span>
-                        </div>
-                        <div class="multi-slider-controls">
-                            <button class="control-btn" onclick="ui.survivalSlider.clear()">Clear</button>
+                            <div class="multi-slider-labels">
+                                <span>0</span><span>6</span><span>12</span><span>18</span>
+                            </div>
+                            <div class="multi-slider-controls">
+                                <button class="control-btn" onclick="ui.survivalSlider.clear()">Clear</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="simulation-controls-2">
-                <div class="control-group" id="triangleNeighborhoodType" style="display: none;">
-                    <label>Neighborhood:</label>
-                    <input type="radio" name="triangleNeighborhood" id="vonNeumann" checked> Von Neumann (3)
-                    <input type="radio" name="triangleNeighborhood" id="moore"> Moore (12)
-                </div>
+                <div id="simulation-controls-2">
+                    <div class="control-group" id="triangleNeighborhoodType" style="display: none;">
+                        <label>Neighborhood:</label>
+                        <input type="radio" name="triangleNeighborhood" id="vonNeumann" checked> Von Neumann (3)
+                        <input type="radio" name="triangleNeighborhood" id="moore"> Moore (12)
+                    </div>
 
-                <div class="control-group">
-                    <label>Range:</label>
-                    <input type="radio" name="neighborhood" id="ring1" checked> Ring 1
-                    <input type="radio" name="neighborhood" id="ring2"> Ring 2
-                    <input type="radio" name="neighborhood" id="ring3"> Ring 3
-                </div>
+                    <div class="control-group">
+                        <label>Range:</label>
+                        <input type="radio" name="neighborhood" id="ring1" checked> Ring 1
+                        <input type="radio" name="neighborhood" id="ring2"> Ring 2
+                        <input type="radio" name="neighborhood" id="ring3"> Ring 3
+                    </div>
 
-                <div class="control-group">
-                    <label>Cell phases:</label>
-                    <input type="range" id="cellPhases" min="1" max="10" value="1">
-                    <span id="cellPhasesValue">1</span>
-                </div>
+                    <div class="control-group">
+                        <label>Cell phases:</label>
+                        <input type="range" id="cellPhases" min="1" max="10" value="1">
+                        <span id="cellPhasesValue">1</span>
+                    </div>
 
-                <div class="control-group">
-                    <label>Colors:</label>
-                    <input type="color" id="aliveColor" value="#000000">
-                    <input type="color" id="deadColor" value="#ffffff">
-                </div>
+                    <div class="control-group">
+                        <label>Colors:</label>
+                        <input type="color" id="aliveColor" value="#000000">
+                        <input type="color" id="deadColor" value="#ffffff">
+                    </div>
 
-                <div class="control-group">
-                    <label>Code:</label>
-                    <input type="text" size="45" id="ruleCode" value="Gh/R1/P1/B2/S2-3/A#000000/D#ffffff" disabled>
+                    <div class="control-group rule-code-group">
+                        <label for="ruleCode">Code:</label>
+                        <input type="text" size="45" id="ruleCode" spellcheck="false" autocomplete="off"
+                            value="Gh/R1/P1/B2/S2/A#000000/D#ffffff">
+                        <button id="applyCode" disabled>Apply</button>
+                        <div id="ruleCodeError" class="rule-code-error" aria-live="polite"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -138,6 +152,8 @@
         <div id="canvas-container"></div>
     </div>
 
+    <script src="glUtils.js"></script>
+    <script src="populationGraph.js"></script>
     <script src="sketch.js"></script>
     <script src="interface.js"></script>
     <script src="gridRenderer.js"></script>

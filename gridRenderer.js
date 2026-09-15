@@ -1,440 +1,173 @@
+// Fullscreen pass: each screen pixel finds the hex/triangle it lies in and reads that cell's state.
+// Cost depends on screen resolution only, not on grid size or population.
+const RENDER_FS = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp usampler2D;
+
+uniform usampler2D u_state;
+uniform ivec2 u_gridSize;
+uniform int u_gridType;        // 0 = hex, 1 = tri
+uniform float u_cellSize;
+uniform vec2 u_start;          // world position of cell (0,0)
+uniform vec2 u_camera;         // camera.x, camera.y
+uniform vec2 u_pixelScale;     // device pixels per world unit (zoom * pixelDensity)
+uniform vec2 u_bufferCenter;   // drawing-buffer centre in device pixels
+uniform vec3 u_aliveColor;
+uniform vec3 u_deadColor;
+uniform int u_phases;
+uniform bool u_showOutline;
+uniform vec4 u_outline;        // left, bottom, right, top in (floored) device pixels
+
+out vec4 outColor;
+
+float jsRound(float x) { return floor(x + 0.5); } // matches Math.round
+
+// Same cube-rounding as screenToHexGrid (flat-top hexes, odd columns shifted down)
+ivec2 hexCell(vec2 rel) {
+    float R = u_cellSize * 0.5;
+    float q = rel.x * (2.0 / 3.0) / R;
+    float r = -rel.x / (3.0 * R) + rel.y * sqrt(3.0) / (3.0 * R);
+    vec3 cube = vec3(q, -q - r, r);
+    vec3 rc = vec3(jsRound(cube.x), jsRound(cube.y), jsRound(cube.z));
+    vec3 d = abs(rc - cube);
+    if (d.x > d.y && d.x > d.z) rc.x = -rc.y - rc.z;
+    else if (d.y > d.z)         rc.y = -rc.x - rc.z;
+    else                        rc.z = -rc.x - rc.y;
+    int col = int(rc.x);
+    int row = int(rc.z) + (col - (col & 1)) / 2;
+    return ivec2(col, row);
+}
+
+// Exact point-in-triangle for the layout used by the original renderer:
+// centre = (startX + x*w/2 (+w/2 on odd rows), startY + y*h), even x = point up.
+ivec2 triCell(vec2 rel) {
+    float h = u_cellSize * 0.866;
+    float halfW = u_cellSize * 0.5;
+    float fy = rel.y / h + 0.5;
+    float rowF = floor(fy);
+    int row = int(rowF);
+    float v = fy - rowF - 0.5;                      // -0.5 = top of row, +0.5 = bottom
+    float u = rel.x / halfW - float(row & 1);       // triangle x index coordinate
+    float k = floor(u);
+    float t = u - k;
+    int ki = int(k);
+    bool kUp = (ki & 1) == 0;
+    int col = (t <= (kUp ? v + 0.5 : 0.5 - v)) ? ki : ki + 1;
+    return ivec2(col, row);
+}
+
+void main() {
+    vec2 frag = gl_FragCoord.xy;
+    vec2 world = u_camera + vec2(
+        (frag.x - u_bufferCenter.x) / u_pixelScale.x,
+        (u_bufferCenter.y - frag.y) / u_pixelScale.y);
+    vec2 rel = world - u_start;
+    ivec2 cell = (u_gridType == 0) ? hexCell(rel) : triCell(rel);
+
+    vec3 color = u_deadColor;
+    if (all(greaterThanEqual(cell, ivec2(0))) && all(lessThan(cell, u_gridSize))) {
+        uint v = texelFetch(u_state, cell, 0).r;
+        if (v > 0u) {
+            if (u_phases == 1) color = u_aliveColor;
+            else color = u_deadColor + (u_aliveColor - u_deadColor) * (float(v) / float(u_phases));
+        }
+    }
+
+    if (u_showOutline) {
+        vec2 px = floor(frag);
+        bool onV = (px.x == u_outline.x || px.x == u_outline.z) && px.y >= u_outline.y && px.y <= u_outline.w;
+        bool onH = (px.y == u_outline.y || px.y == u_outline.w) && px.x >= u_outline.x && px.x <= u_outline.z;
+        if (onV || onH) color = vec3(0.0);
+    }
+
+    outColor = vec4(color, 1.0);
+}`;
+
 class GridRenderer {
-    constructor() {
-        this.gl = null;
-        this.program = null;
-        this.hexProgram = null;
-        this.triProgram = null;
-        this.triUpProgram = null;
-        this.triDownProgram = null;
-        this.hexBuffer = null;
-        this.triUpBuffer = null;
-        this.triDownBuffer = null;
-        this.instanceBuffer = null;
-        this.colorBuffer = null;
+    constructor(gl) {
+        this.gl = gl;
         this.cellSize = 12;
-        this.maxInstances = 250000;
-        this.instanceData = new Float32Array(this.maxInstances * 2);
-        this.colorData = new Float32Array(this.maxInstances * 3);
-        this.hexVertices = this.precomputeHexVertices();
-        this.triVertices = this.precomputeTriVertices();
-        this.init();
+        this.vao = gl.createVertexArray();
+        this.program = new ShaderProgram(gl, FULLSCREEN_VS, RENDER_FS);
     }
 
-    init() {
-        const canvas = document.querySelector('canvas');
-        this.gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-
-        if (!this.gl) {
-            console.error('WebGL not supported');
-            return;
-        }
-
-        this.gl.enable(this.gl.BLEND);
-        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-
-        this.createShaders();
-        this.createBuffers();
-    }
-
-    createShaders() {
-        const vertexShaderSource = `
-        attribute vec2 a_position;
-        attribute vec2 a_instancePosition;
-        attribute vec3 a_color;
-        attribute float a_orientation;
-        
-        uniform mat3 u_transform;
-        uniform float u_scale;
-        
-        varying vec3 v_color;
-        
-        void main() {
-            vec2 pos = a_position;
-            if (a_orientation > 0.5) {
-                pos.y = -pos.y;
-            }
-            vec2 scaledPos = pos * u_scale;
-            vec2 worldPos = scaledPos + a_instancePosition;
-            vec3 transformed = u_transform * vec3(worldPos, 1.0);
-            gl_Position = vec4(transformed.xy, 0.0, 1.0);
-            v_color = a_color;
-        }
-    `;
-
-        const fragmentShaderSource = `
-        precision mediump float;
-        varying vec3 v_color;
-        
-        void main() {
-            gl_FragColor = vec4(v_color, 1.0);
-        }
-    `;
-
-        this.hexProgram = this.createProgram(vertexShaderSource, fragmentShaderSource);
-        this.triProgram = this.createProgram(vertexShaderSource, fragmentShaderSource);
-    }
-
-
-    createProgram(vertexSource, fragmentSource) {
-        const vertexShader = this.createShader(this.gl.VERTEX_SHADER, vertexSource);
-        const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, fragmentSource);
-
-        const program = this.gl.createProgram();
-        this.gl.attachShader(program, vertexShader);
-        this.gl.attachShader(program, fragmentShader);
-        this.gl.linkProgram(program);
-
-        if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-            console.error('Program link error:', this.gl.getProgramInfoLog(program));
-        }
-
-        return program;
-    }
-
-    createShader(type, source) {
-        const shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, source);
-        this.gl.compileShader(shader);
-
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            console.error('Shader compile error:', this.gl.getShaderInfoLog(shader));
-        }
-
-        return shader;
-    }
-
-    precomputeHexVertices() {
-        const vertices = [];
-        for (let i = 0; i < 6; i++) {
-            const angle = i * Math.PI / 3;
-            vertices.push(Math.cos(angle), Math.sin(angle));
-        }
-        return new Float32Array(vertices);
-    }
-
-    precomputeTriVertices() {
-        const height = 0.433;
-        return new Float32Array([
-            0, -height,      // top
-            -0.5, height,    // bottom left
-            0.5, height      // bottom right
-        ]);
-    }
-
-    createBuffers() {
-        // Hexagon vertices
-        this.hexBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.hexBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.hexVertices, this.gl.STATIC_DRAW);
-
-        // Triangle vertices (use up triangle, shader will flip for down)
-        this.triBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.triBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.triVertices, this.gl.STATIC_DRAW);
-
-        // Instance positions
-        this.instanceBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.instanceData, this.gl.DYNAMIC_DRAW);
-
-        // Instance colors
-        this.colorBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.colorData, this.gl.DYNAMIC_DRAW);
-
-        // Orientation buffer
-        this.orientationBuffer = this.gl.createBuffer();
-        this.orientationData = new Float32Array(this.maxInstances);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.orientationBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, this.orientationData, this.gl.DYNAMIC_DRAW);
-    }
-
-    render() {
-        if (!this.gl) return;
-
-        this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-        this.gl.clearColor(deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255, 1.0);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-
-        if (gridSystem.type === 'hex') {
-            this.renderHexGrid(gridSystem.getLiveCells());
-        } else if (gridSystem.type === 'tri') {
-            this.renderTriangleGrid(gridSystem.getLiveCells());
-        }
-        this.renderGridOutline();
-    }
-
-    renderHexGrid(cellsToDraw) {
-        if (cellsToDraw.length === 0) return;
-
-        this.gl.flush();
-        this.gl.finish();
-
-        const program = this.hexProgram;
-        this.gl.useProgram(program);
-
-        const hexRadius = this.cellSize * 0.5;
-        const hexWidth = hexRadius * 2;
-        const hexHeight = hexRadius * Math.sqrt(3);
-        const startX = -gridSystem.width * hexWidth * 0.75 / 2;
-        const startY = -gridSystem.height * hexHeight / 2;
-
-        let instanceCount = 0;
-
-        for (const { x, y } of cellsToDraw) {
-            if (instanceCount >= this.maxInstances) break;
-
-            const hexX = startX + x * hexWidth * 0.75;
-            const hexY = startY + y * hexHeight + (x % 2) * hexHeight * 0.5;
-
-            this.instanceData[instanceCount * 2] = hexX;
-            this.instanceData[instanceCount * 2 + 1] = hexY;
-
-            const cellValue = gridSystem.getCell(x, y);
-            const color = this.getCellColor(cellValue);
-
-            this.colorData[instanceCount * 3] = color[0] / 255;
-            this.colorData[instanceCount * 3 + 1] = color[1] / 255;
-            this.colorData[instanceCount * 3 + 2] = color[2] / 255;
-
-            instanceCount++;
-        }
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.instanceData.subarray(0, instanceCount * 2));
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.colorData.subarray(0, instanceCount * 3));
-
-        // Set uniforms
-        const transformLoc = this.gl.getUniformLocation(program, 'u_transform');
-        const scaleLoc = this.gl.getUniformLocation(program, 'u_scale');
-
-        const transform = this.getTransformMatrix();
-        this.gl.uniformMatrix3fv(transformLoc, false, transform);
-        this.gl.uniform1f(scaleLoc, hexRadius * 1.02);
-
-        // Bind vertex positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.hexBuffer);
-        const positionLoc = this.gl.getAttribLocation(program, 'a_position');
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        // Bind instance positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        const instancePosLoc = this.gl.getAttribLocation(program, 'a_instancePosition');
-        this.gl.enableVertexAttribArray(instancePosLoc);
-        this.gl.vertexAttribPointer(instancePosLoc, 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(instancePosLoc, 1);
-
-        // Bind colors
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        const colorLoc = this.gl.getAttribLocation(program, 'a_color');
-        this.gl.enableVertexAttribArray(colorLoc);
-        this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(colorLoc, 1);
-
-        this.gl.drawArraysInstanced(this.gl.TRIANGLE_FAN, 0, 6, instanceCount);
-    }
-
-    renderTriangleGrid(cellsToDraw) {
-        if (cellsToDraw.length === 0) return;
-
-        const triHeight = this.cellSize * 0.866;
-        const triWidth = this.cellSize;
-        const rowHeight = triHeight;
-        const startX = -gridSystem.width * triWidth * 0.5 / 2;
-        const startY = -gridSystem.height * rowHeight / 2;
-
-        let instanceCount = 0;
-
-        for (const { x, y } of cellsToDraw) {
-            if (instanceCount >= this.maxInstances) break;
-
-            let triX = startX + x * triWidth * 0.5;
-            let triY = startY + y * rowHeight;
-
-            if (y % 2 === 1) {
-                triX += triWidth * 0.5;
-            }
-
-            const cellValue = gridSystem.getCell(x, y);
-            const color = this.getCellColor(cellValue);
-
-            this.instanceData[instanceCount * 2] = triX;
-            this.instanceData[instanceCount * 2 + 1] = triY;
-
-            this.colorData[instanceCount * 3] = color[0] / 255;
-            this.colorData[instanceCount * 3 + 1] = color[1] / 255;
-            this.colorData[instanceCount * 3 + 2] = color[2] / 255;
-
-            // 0.0 for up triangles, 1.0 for down triangles
-            this.orientationData[instanceCount] = (x % 2 === 0) ? 0.0 : 1.0;
-
-            instanceCount++;
-        }
-
-        const program = this.triProgram;
-        this.gl.useProgram(program);
-
-        // Update buffers
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.instanceData.subarray(0, instanceCount * 2));
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.colorData.subarray(0, instanceCount * 3));
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.orientationBuffer);
-        this.gl.bufferSubData(this.gl.ARRAY_BUFFER, 0, this.orientationData.subarray(0, instanceCount));
-
-        // Set uniforms
-        const transformLoc = this.gl.getUniformLocation(program, 'u_transform');
-        const scaleLoc = this.gl.getUniformLocation(program, 'u_scale');
-
-        const transform = this.getTransformMatrix();
-        this.gl.uniformMatrix3fv(transformLoc, false, transform);
-        this.gl.uniform1f(scaleLoc, this.cellSize);
-
-        // Bind vertex positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.triBuffer);
-        const positionLoc = this.gl.getAttribLocation(program, 'a_position');
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        // Bind instance positions
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.instanceBuffer);
-        const instancePosLoc = this.gl.getAttribLocation(program, 'a_instancePosition');
-        this.gl.enableVertexAttribArray(instancePosLoc);
-        this.gl.vertexAttribPointer(instancePosLoc, 2, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(instancePosLoc, 1);
-
-        // Bind colors
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        const colorLoc = this.gl.getAttribLocation(program, 'a_color');
-        this.gl.enableVertexAttribArray(colorLoc);
-        this.gl.vertexAttribPointer(colorLoc, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(colorLoc, 1);
-
-        // Bind orientation
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.orientationBuffer);
-        const orientationLoc = this.gl.getAttribLocation(program, 'a_orientation');
-        this.gl.enableVertexAttribArray(orientationLoc);
-        this.gl.vertexAttribPointer(orientationLoc, 1, this.gl.FLOAT, false, 0, 0);
-        this.gl.vertexAttribDivisor(orientationLoc, 1);
-
-        this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 3, instanceCount);
-    }
-
-    renderGridOutline() {
-        if (!ui.showOutline) return;
-
-        const program = this.hexProgram;
-        this.gl.useProgram(program);
-
-        // Calculate grid bounds to match actual cell positioning
-        let bounds;
+    // Same startX/startY/bounds math as the original renderer and outline code.
+    getGridLayout() {
+        const W = gridSystem.width, H = gridSystem.height;
         if (gridSystem.type === 'hex') {
             const hexRadius = this.cellSize * 0.5;
             const hexWidth = hexRadius * 2;
             const hexHeight = hexRadius * Math.sqrt(3);
-
-            // Use the same startX/startY logic as renderHexGrid
-            const startX = -gridSystem.width * hexWidth * 0.75 / 2;
-            const startY = -gridSystem.height * hexHeight / 2;
-
-            bounds = {
-                left: startX - hexRadius,
-                right: startX + (gridSystem.width - 1) * hexWidth * 0.75 + hexRadius,
-                top: startY - hexHeight / 2,
-                bottom: startY + gridSystem.height * hexHeight
+            const startX = -W * hexWidth * 0.75 / 2;
+            const startY = -H * hexHeight / 2;
+            return {
+                startX, startY,
+                bounds: {
+                    left: startX - hexRadius,
+                    right: startX + (W - 1) * hexWidth * 0.75 + hexRadius,
+                    top: startY - hexHeight / 2,
+                    bottom: startY + H * hexHeight
+                }
             };
-        } else { // triangle
-            const triHeight = this.cellSize * 0.866;
-            const triWidth = this.cellSize;
-
-            // Use the same startX/startY logic as renderTriangleGrid
-            const startX = -gridSystem.width * triWidth * 0.5 / 2;
-            const startY = -gridSystem.height * triHeight * 0.5;
-
-            bounds = {
+        }
+        const triHeight = this.cellSize * 0.866;
+        const triWidth = this.cellSize;
+        const startX = -W * triWidth * 0.5 / 2;
+        const startY = -H * triHeight * 0.5;
+        return {
+            startX, startY,
+            bounds: {
                 left: startX - triWidth * 0.5,
-                right: startX + gridSystem.width * triWidth * 0.5 + triWidth * 0.5,
+                right: startX + W * triWidth * 0.5 + triWidth * 0.5,
                 top: startY - triHeight * 0.5,
-                bottom: startY + gridSystem.height * triHeight - triHeight * 0.5
-            };
-        }
-
-        // Create outline vertices (rectangle)
-        const outlineVertices = new Float32Array([
-            bounds.left, bounds.top,     // top-left
-            bounds.right, bounds.top,    // top-right
-            bounds.right, bounds.bottom, // bottom-right
-            bounds.left, bounds.bottom   // bottom-left
-        ]);
-
-        // Create buffer for outline
-        if (!this.outlineBuffer) {
-            this.outlineBuffer = this.gl.createBuffer();
-        }
-
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.outlineBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, outlineVertices, this.gl.STATIC_DRAW);
-
-        // Set uniforms
-        const transformLoc = this.gl.getUniformLocation(program, 'u_transform');
-        const scaleLoc = this.gl.getUniformLocation(program, 'u_scale');
-
-        const transform = this.getTransformMatrix();
-        this.gl.uniformMatrix3fv(transformLoc, false, transform);
-        this.gl.uniform1f(scaleLoc, 1.0);
-
-        // Bind vertices
-        const positionLoc = this.gl.getAttribLocation(program, 'a_position');
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        // Set color to outline color
-        const instancePosLoc = this.gl.getAttribLocation(program, 'a_instancePosition');
-        const colorLoc = this.gl.getAttribLocation(program, 'a_color');
-
-        // Disable instancing for the outline
-        this.gl.disableVertexAttribArray(instancePosLoc);
-        this.gl.disableVertexAttribArray(colorLoc);
-        this.gl.vertexAttrib2f(instancePosLoc, 0, 0);
-
-        // Draw outline as line loop
-        this.gl.drawArrays(this.gl.LINE_LOOP, 0, 4);
-    }
-
-    getCellColor(cellValue) {
-        if (cellValue === 0) {
-            return deadColor;
-        } else {
-            if (gameRules.cellPhases === 1) {
-                return aliveColor;
-            } else {
-                const t = (cellValue / gameRules.cellPhases);
-                return [
-                    deadColor[0] + (aliveColor[0] - deadColor[0]) * t,
-                    deadColor[1] + (aliveColor[1] - deadColor[1]) * t,
-                    deadColor[2] + (aliveColor[2] - deadColor[2]) * t
-                ];
+                bottom: startY + H * triHeight - triHeight * 0.5
             }
-        }
+        };
     }
 
-    getTransformMatrix() {
-        const zoom = camera.zoom;
-        const tx = -camera.x * zoom;
-        const ty = camera.y * zoom;
-        const scaleX = zoom * 2 / width;
-        const scaleY = -zoom * 2 / height;
+    render() {
+        if (!this.gl) return;
+        const gl = this.gl;
+        const layout = this.getGridLayout();
+        const b = layout.bounds;
 
-        return new Float32Array([
-            scaleX, 0, 0,
-            0, scaleY, 0,
-            tx * 2 / width, ty * 2 / height, 1
-        ]);
+        // Allow zooming out far enough to see large grids (never stricter than the original 0.1).
+        const fit = Math.min(width / (b.right - b.left), height / (b.bottom - b.top));
+        camera.minZoom = Math.min(0.1, fit * 0.5);
+
+        const bufW = gl.drawingBufferWidth, bufH = gl.drawingBufferHeight;
+        const sx = camera.zoom * bufW / width;
+        const sy = camera.zoom * bufH / height;
+
+        resetGLState(gl);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, bufW, bufH);
+
+        const p = this.program.use();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, gridSystem.stateTexture);
+        gl.uniform1i(p.loc('u_state'), 0);
+        gl.uniform2i(p.loc('u_gridSize'), gridSystem.width, gridSystem.height);
+        gl.uniform1i(p.loc('u_gridType'), gridSystem.type === 'hex' ? 0 : 1);
+        gl.uniform1f(p.loc('u_cellSize'), this.cellSize);
+        gl.uniform2f(p.loc('u_start'), layout.startX, layout.startY);
+        gl.uniform2f(p.loc('u_camera'), camera.x, camera.y);
+        gl.uniform2f(p.loc('u_pixelScale'), sx, sy);
+        gl.uniform2f(p.loc('u_bufferCenter'), bufW / 2, bufH / 2);
+        gl.uniform3f(p.loc('u_aliveColor'), aliveColor[0] / 255, aliveColor[1] / 255, aliveColor[2] / 255);
+        gl.uniform3f(p.loc('u_deadColor'), deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255);
+        gl.uniform1i(p.loc('u_phases'), gameRules.cellPhases);
+        gl.uniform1i(p.loc('u_showOutline'), ui.showOutline ? 1 : 0);
+
+        // Outline rectangle in device pixels (y up), like the old 1px LINE_LOOP
+        const toDevX = wx => bufW / 2 + (wx - camera.x) * sx;
+        const toDevY = wy => bufH / 2 - (wy - camera.y) * sy;
+        gl.uniform4f(p.loc('u_outline'),
+            Math.floor(toDevX(b.left)), Math.floor(toDevY(b.bottom)),
+            Math.floor(toDevX(b.right)), Math.floor(toDevY(b.top)));
+
+        drawFullscreenTriangle(gl, this.vao);
     }
 
     screenToGrid(screenX, screenY) {
@@ -483,11 +216,8 @@ class GridRenderer {
         const col = roundX;
         const row = roundZ + (roundX - (roundX & 1)) / 2;
 
-        const gridX = col;
-        const gridY = row;
-
-        if (gridX >= 0 && gridX < gridSystem.width && gridY >= 0 && gridY < gridSystem.height) {
-            return { x: gridX, y: gridY };
+        if (col >= 0 && col < gridSystem.width && row >= 0 && row < gridSystem.height) {
+            return { x: col, y: row };
         }
         return null;
     }
@@ -512,8 +242,6 @@ class GridRenderer {
     }
 
     resize() {
-        if (this.gl) {
-            this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-        }
+        // Nothing to do: render() reads the drawing-buffer size every frame.
     }
 }

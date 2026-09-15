@@ -28,8 +28,11 @@ class Interface {
         this.saveStateBtn = null;
         this.clearStatesBtn = null;
         this.showOutlinesCheckbox = null;
+        this.ruleCodeInput = null;
+        this.applyCodeBtn = null;
+        this.ruleCodeError = null;
         this.showOutline = true;
-        this.notation = 'Gh/R1/P1/B2/S2-3/A#000000/D#ffffff/O#888888';
+        this.notation = '';
 
         this.initUI();
     }
@@ -134,7 +137,7 @@ class Interface {
         });
 
         this.clearBtn.mousePressed(() => {
-            gridSystem.cells = gridSystem.createEmptyGrid();
+            gridSystem.clear();
             generation = 0;
             needsRender = true;
         });
@@ -241,11 +244,198 @@ class Interface {
             saveSystem.loadStateList();
         });
 
+        this.initRuleCodeEditor();
+        this.initCollapsiblePanels();
         this.addStateEventListeners();
+
+        // Make the code field reflect the actual initial rules
+        this.updateRuleNotation();
     }
 
+    // ---------------- Rule code editor ----------------
+
+    initRuleCodeEditor() {
+        this.ruleCodeInput = document.getElementById('ruleCode');
+        this.applyCodeBtn = document.getElementById('applyCode');
+        this.ruleCodeError = document.getElementById('ruleCodeError');
+        this.ruleCodeInput.disabled = false;
+
+        this.ruleCodeInput.addEventListener('input', () => this.validateRuleCodeInput());
+
+        this.ruleCodeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.applyRuleCode();
+            } else if (e.key === 'Escape') {
+                this.ruleCodeInput.value = this.notation;
+                this.validateRuleCodeInput();
+                this.ruleCodeInput.blur();
+            }
+        });
+
+        this.applyCodeBtn.addEventListener('click', () => this.applyRuleCode());
+    }
+
+    // Updates Apply button / error display. Returns the parsed rules if applicable, else null.
+    validateRuleCodeInput() {
+        const text = this.ruleCodeInput.value.trim();
+        const modified = text !== this.notation;
+        const result = modified ? this.parseRuleCode(text) : null;
+        const valid = !!(result && !result.error);
+
+        this.applyCodeBtn.disabled = !(modified && valid);
+        this.ruleCodeInput.classList.toggle('modified', modified && valid);
+        this.ruleCodeInput.classList.toggle('invalid', modified && !valid);
+        this.ruleCodeError.textContent = (modified && !valid) ? result.error : '';
+
+        return valid ? result.value : null;
+    }
+
+    applyRuleCode() {
+        const rules = this.validateRuleCodeInput();
+        if (!rules) return;
+
+        gridSystem.setType(rules.gridType);
+        gameRules.neighborDistance = rules.neighborDistance;
+        gameRules.cellPhases = rules.cellPhases;
+        if (rules.triangleNeighborhoodType) {
+            gameRules.triangleNeighborhoodType = rules.triangleNeighborhoodType;
+        }
+        gameRules.birthNumbers = rules.birthNumbers;
+        gameRules.survivalNumbers = rules.survivalNumbers;
+        aliveColor = rules.aliveColor;
+        deadColor = rules.deadColor;
+
+        this.refreshUI(); // syncs every control and rewrites the code field in canonical form
+        gridSystem.updateNeighborhood();
+        needsRender = true;
+    }
+
+    // Parses "Gh/R1/P1/B2/S2-3/A#000000/D#ffffff" (tri: ".../S.../NV|NM/A.../D...").
+    // Returns { value } on success or { error } with a human-readable message.
+    parseRuleCode(text) {
+        const fail = (error) => ({ error });
+        const code = text.trim();
+        if (code === '') return fail('The code is empty.');
+
+        const parts = code.split('/').map(p => p.trim());
+
+        const g = parts[0].match(/^G([ht])$/);
+        if (!g) return fail('Section 1 must be "Gh" (hexagonal) or "Gt" (triangular).');
+        const gridType = g[1] === 'h' ? 'hex' : 'tri';
+
+        const expected = gridType === 'hex' ? 7 : 8;
+        const layout = gridType === 'hex' ? 'G/R/P/B/S/A/D' : 'G/R/P/B/S/N/A/D';
+        if (parts.length !== expected) {
+            return fail(`A ${gridType === 'hex' ? 'hexagonal' : 'triangular'} code needs ${expected} sections (${layout}), found ${parts.length}.`);
+        }
+
+        const r = parts[1].match(/^R([1-3])$/);
+        if (!r) return fail('Range must be R1, R2 or R3.');
+        const neighborDistance = parseInt(r[1], 10);
+
+        const p = parts[2].match(/^P(\d+)$/);
+        const cellPhases = p ? parseInt(p[1], 10) : NaN;
+        if (!p || cellPhases < 1 || cellPhases > 10) return fail('Cell phases must be P1 to P10.');
+
+        let triangleNeighborhoodType = null;
+        let colorIndex = 5;
+        if (gridType === 'tri') {
+            const n = parts[5].match(/^N([VM])$/);
+            if (!n) return fail('Triangle neighborhood must be NV (von Neumann) or NM (Moore).');
+            triangleNeighborhoodType = n[1] === 'V' ? 'vonNeumann' : 'moore';
+            colorIndex = 6;
+        }
+
+        const maxN = this.computeMaxNeighbors(gridType, neighborDistance, cellPhases,
+            triangleNeighborhoodType ?? gameRules.triangleNeighborhoodType);
+
+        if (!parts[3].startsWith('B')) return fail('Section 4 must start with "B" (birth rule).');
+        const birth = this.parseRuleList(parts[3].slice(1), 'Birth', maxN);
+        if (birth.error) return birth;
+
+        if (!parts[4].startsWith('S')) return fail('Section 5 must start with "S" (survival rule).');
+        const survival = this.parseRuleList(parts[4].slice(1), 'Survival', maxN);
+        if (survival.error) return survival;
+
+        const a = parts[colorIndex].match(/^A#([0-9a-fA-F]{6})$/);
+        if (!a) return fail('Alive color must look like A#rrggbb.');
+        const d = parts[colorIndex + 1].match(/^D#([0-9a-fA-F]{6})$/);
+        if (!d) return fail('Dead color must look like D#rrggbb.');
+
+        return {
+            value: {
+                gridType,
+                neighborDistance,
+                cellPhases,
+                triangleNeighborhoodType,
+                birthNumbers: birth.values,
+                survivalNumbers: survival.values,
+                aliveColor: this.hexToRgb('#' + a[1]),
+                deadColor: this.hexToRgb('#' + d[1])
+            }
+        };
+    }
+
+    // "2.4-6.9" -> [2,4,5,6,9]; empty string = no values.
+    parseRuleList(body, label, max) {
+        if (body === '') return { values: [] };
+
+        const values = new Set();
+        for (const token of body.split('.')) {
+            if (token === '') {
+                return { error: `${label} rule has an empty entry (check for stray "." characters).` };
+            }
+            const m = token.match(/^(\d+)(?:-(\d+))?$/);
+            if (!m) return { error: `${label} rule: "${token}" is not a number or range (e.g. 2.4-6).` };
+
+            const start = parseInt(m[1], 10);
+            const end = m[2] !== undefined ? parseInt(m[2], 10) : start;
+            if (end < start) return { error: `${label} rule: range "${token}" is backwards.` };
+            if (end > max) return { error: `${label} rule: ${end} exceeds the maximum of ${max} for this neighborhood.` };
+
+            for (let i = start; i <= end; i++) values.add(i);
+        }
+        return { values: Array.from(values).sort((a, b) => a - b) };
+    }
+
+    // ---------------- Collapsible panels ----------------
+
+    initCollapsiblePanels() {
+        const storageKey = 'caPanelState';
+        let saved = {};
+        try {
+            saved = JSON.parse(localStorage.getItem(storageKey)) || {};
+        } catch (e) { /* ignore */ }
+
+        const panels = [
+            { panel: 'savedStates', button: 'toggleStates', key: 'states', label: 'saved states', expandedIcon: '◀', collapsedIcon: '▶' },
+            { panel: 'controls', button: 'toggleControls', key: 'controls', label: 'controls', expandedIcon: '▲', collapsedIcon: '▼' }
+        ];
+
+        for (const p of panels) {
+            const panel = document.getElementById(p.panel);
+            const button = document.getElementById(p.button);
+
+            const setCollapsed = (collapsed) => {
+                panel.classList.toggle('collapsed', collapsed);
+                button.textContent = collapsed ? p.collapsedIcon : p.expandedIcon;
+                button.title = `${collapsed ? 'Expand' : 'Collapse'} ${p.label}`;
+                saved[p.key] = collapsed;
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(saved));
+                } catch (e) { /* ignore */ }
+                // The canvas resizes itself via the ResizeObserver in sketch.js
+            };
+
+            setCollapsed(!!saved[p.key]);
+            button.addEventListener('click', () => setCollapsed(!panel.classList.contains('collapsed')));
+        }
+    }
+
+    // ---------------- Saved states ----------------
+
     addStateEventListeners() {
-        // Add click events to state card load and delete buttons
         let loadButtons = document.querySelectorAll('.loadState');
         let deleteButtons = document.querySelectorAll('.deleteState');
 
@@ -264,7 +454,7 @@ class Interface {
                 } else {
                     console.error('Failed to load state:', name);
                 }
-                e.stopPropagation(); // Prevent card click event
+                e.stopPropagation();
             });
         });
 
@@ -276,14 +466,16 @@ class Interface {
 
                 let name = e.target.getAttribute('data-name');
                 if (saveSystem.deleteState(name)) {
-                    saveSystem.loadStateList(); // Refresh the list
-                    this.addStateEventListeners(); // Re-add event listeners
+                    saveSystem.loadStateList();
+                    this.addStateEventListeners();
                 } else {
                     console.error('Failed to delete state:', name);
                 }
             });
         });
     }
+
+    // ---------------- Helpers ----------------
 
     hexToRgb(hex) {
         let bigint = parseInt(hex.slice(1), 16);
@@ -309,7 +501,10 @@ class Interface {
 
         this.notation = `G${gridSystem.type[0]}/R${gameRules.neighborDistance}/P${gameRules.cellPhases}/B${birthRule}/S${survivalRule}${neighborhoodType}/A${this.rgbToHex(aliveColor)}/D${this.rgbToHex(deadColor)}`;
 
-        select('#ruleCode').value(this.notation);
+        if (this.ruleCodeInput) {
+            this.ruleCodeInput.value = this.notation;
+            this.validateRuleCodeInput(); // resets Apply button / error state
+        }
     }
 
     formatRuleForNotation(numbers) {
@@ -339,25 +534,20 @@ class Interface {
         return ranges.join('.');
     }
 
-    getMaxNeighborsForDistance(gridType, distance) {
+    computeMaxNeighbors(gridType, distance, phases, triangleNeighborhoodType) {
+        let counts;
         if (gridType === 'hex') {
-            if (distance === 1) return 6 * gameRules.cellPhases;
-            if (distance === 2) return 18 * gameRules.cellPhases;
-            if (distance === 3) return 36 * gameRules.cellPhases;
-        } else if (gridType === 'tri') {
-            if (gameRules.triangleNeighborhoodType === 'vonNeumann') {
-                // Von Neumann neighborhood (3 side neighbors)
-                if (distance === 1) return 3 * gameRules.cellPhases;
-                if (distance === 2) return 9 * gameRules.cellPhases;
-                if (distance === 3) return 18 * gameRules.cellPhases;
-            } else {
-                // Moore neighborhood (12 neighbors)
-                if (distance === 1) return 12 * gameRules.cellPhases;
-                if (distance === 2) return 30 * gameRules.cellPhases;
-                if (distance === 3) return 54 * gameRules.cellPhases;
-            }
+            counts = { 1: 6, 2: 18, 3: 36 };
+        } else if (triangleNeighborhoodType === 'vonNeumann') {
+            counts = { 1: 3, 2: 9, 3: 18 };   // Von Neumann (3 side neighbors)
+        } else {
+            counts = { 1: 12, 2: 30, 3: 54 }; // Moore (12 neighbors)
         }
-        return 0;
+        return (counts[distance] || 0) * phases;
+    }
+
+    getMaxNeighborsForDistance(gridType, distance) {
+        return this.computeMaxNeighbors(gridType, distance, gameRules.cellPhases, gameRules.triangleNeighborhoodType);
     }
 
     updateNeighborhoodBounds() {
@@ -380,20 +570,17 @@ class Interface {
     }
 
     refreshUI() {
-        // Update button states
         this.hexBtn.removeClass('active');
         this.triBtn.removeClass('active');
         gridSystem.type === 'hex' ? this.hexBtn.addClass('active') : this.triBtn.addClass('active');
-        generation = 0; // Reset generation on grid change
+        generation = 0;
 
-        // Show/hide triangle neighborhood controls
         if (gridSystem.type === 'tri') {
             this.triangleNeighborhoodGroup.style('display', 'block');
         } else {
             this.triangleNeighborhoodGroup.style('display', 'none');
         }
 
-        // Update UI to reflect possible new rules
         this.gridWidthSlider.value(gridSystem.width);
         this.gridHeightSlider.value(gridSystem.height);
         this.cellPhasesSlider.value(gameRules.cellPhases);
@@ -407,12 +594,10 @@ class Interface {
             this.survivalSlider.setValues(gameRules.survivalNumbers);
         }
 
-        // Update radio button states
         this.ring1Radio.elt.checked = (gameRules.neighborDistance === 1);
         this.ring2Radio.elt.checked = (gameRules.neighborDistance === 2);
         this.ring3Radio.elt.checked = (gameRules.neighborDistance === 3);
 
-        // Update triangle neighborhood radio buttons
         this.vonNeumannRadio.elt.checked = (gameRules.triangleNeighborhoodType === 'vonNeumann');
         this.mooreRadio.elt.checked = (gameRules.triangleNeighborhoodType === 'moore');
 

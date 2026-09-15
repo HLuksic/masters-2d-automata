@@ -5,6 +5,8 @@ let renderer;
 let gridRenderer;
 let saveSystem;
 let interface;
+let populationGraph;
+let overlayStats;
 let controlPressed = false;
 let isPlaying = false;
 let needsRender = true;
@@ -12,12 +14,8 @@ let generation = 0;
 let deadColor = [255, 255, 255];
 let aliveColor = [0, 0, 0];
 let canvasContainer = document.getElementById('canvas-container');
-let canvasContainerWidth = canvasContainer.clientWidth;
-let canvasContainerHeight = canvasContainer.clientHeight;
-let infoLayer;
 let speed = 30;
 let lastFrameTime = 0;
-
 
 let gameRules = {
     birthNumbers: [2],
@@ -28,34 +26,52 @@ let gameRules = {
 };
 
 function setup() {
-    let canvas = createCanvas(canvasContainerWidth, 900, WEBGL);
+    let canvas = createCanvas(
+        Math.max(1, canvasContainer.clientWidth),
+        Math.max(1, canvasContainer.clientHeight),
+        WEBGL
+    );
     canvas.parent('canvas-container');
     canvas.style('display', 'block');
 
-    gridSystem = new GridSystem();
+    // p5 1.9 creates a WebGL2 context by default; we share it.
+    const gl = drawingContext;
+    if (typeof WebGL2RenderingContext === 'undefined' || !(gl instanceof WebGL2RenderingContext)) {
+        alert('This simulator requires WebGL2.');
+        noLoop();
+        return;
+    }
+
+    gridSystem = new GridSystem(gl);
     saveSystem = new SaveSystem();
     ui = new Interface();
     camera = new Camera();
-    gridRenderer = new GridRenderer();
+    gridRenderer = new GridRenderer(gl);
     updateHTMLOverlay();
+
+    // Keep the canvas filling its container (panel collapse/expand, window resize, etc.)
+    new ResizeObserver(() => resizeCanvasToContainer()).observe(canvasContainer);
 }
 
 function draw() {
+    if (!gridSystem) return;
     let targetFrameTime = 1000 / speed;
 
-    let stepTime = 0, renderTime = 0;
     if (isPlaying && millis() - lastFrameTime > targetFrameTime) {
-        const stepStart = performance.now();
         gridSystem.step();
-        stepTime = performance.now() - stepStart;
         lastFrameTime = millis();
     }
 
     if (needsRender || isPlaying) {
-        const renderStart = performance.now();
         gridRenderer.render();
-        renderTime = performance.now() - renderStart;
         needsRender = false;
+        updateHTMLOverlay();
+    }
+
+    // Population is counted on the GPU and arrives asynchronously
+    const samples = gridSystem.pollPopulation();
+    if (samples.length > 0) {
+        for (const s of samples) populationGraph.addSample(s.generation, s.population);
         updateHTMLOverlay();
     }
 }
@@ -65,34 +81,29 @@ function updateHTMLOverlay() {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'info-overlay';
-        overlay.style.position = 'absolute';
-        overlay.style.top = '10px';
-        overlay.style.left = '10px';
-        overlay.style.color = 'rgb(150, 150, 150)';
-        overlay.style.padding = '10px';
-        overlay.style.fontFamily = 'monospace';
-        overlay.style.fontSize = '16px';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.zIndex = '1000';
-        document.getElementById('canvas-container').appendChild(overlay);
+        overlayStats = document.createElement('div');
+        overlay.appendChild(overlayStats);
+        populationGraph = new PopulationGraph(overlay, { windowSize: 200, width: 200, height: 56 });
+        canvasContainer.appendChild(overlay);
     }
 
-    overlay.innerHTML = `
-        FPS: ${floor(frameRate())}<br>
-        Gen: ${generation}<br>
-        Pop: ${gridSystem.getPopulation()}
-    `;
+    overlayStats.innerHTML = `FPS: ${floor(frameRate())}<br>Gen: ${generation}`;
+    populationGraph.draw(gridSystem.getPopulation());
+}
+
+function resizeCanvasToContainer() {
+    if (!gridRenderer) return;
+    const w = Math.max(1, Math.floor(canvasContainer.clientWidth));
+    const h = Math.max(1, Math.floor(canvasContainer.clientHeight));
+    if (w === width && h === height) return;
+
+    resizeCanvas(w, h, true);
+    gridRenderer.resize();
+    needsRender = true; // resizing clears the canvas, so redraw
 }
 
 function windowResized() {
-    canvasContainerWidth = canvasContainer.clientWidth;
-    canvasContainerHeight = canvasContainer.clientHeight;
-    resizeCanvas(canvasContainerWidth, canvasContainerHeight);
-
-    if (gridRenderer) {
-        gridRenderer.resize();
-        needsRender = false;
-    }
+    resizeCanvasToContainer();
 }
 
 // Keyboard events

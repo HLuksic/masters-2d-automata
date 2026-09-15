@@ -4,14 +4,13 @@ class SaveSystem {
         this.loadStateList();
     }
 
-    saveState(name, notation) {
-        // Capture canvas image
-        let canvasImage = canvas.toDataURL('image/webp', 0.1);
+        saveState(name, notation) {
+        // Capture canvas image (p5's WebGL canvas uses preserveDrawingBuffer, so this works)
+        let canvasImage = gridRenderer.gl.canvas.toDataURL('image/webp', 0.1);
 
-        // Serialize cells as a flat string (row-major, joined by '\n')
-        let cellString = gridSystem.cells.map(row => Array.from(row).join('')).join('\n');
+        // Serialize cells as a flat string (row-major, joined by '\n') - same format as before
+        let cellString = this.serializeCells(gridSystem.readCells(), gridSystem.width, gridSystem.height);
 
-        // Create state object
         let state = {
             timestamp: Date.now(),
             notation: notation,
@@ -19,13 +18,9 @@ class SaveSystem {
             image: canvasImage
         };
 
-        // Get existing states
         let existingStates = this.getAllStates();
-
-        // Add new state (or replace if name exists)
         existingStates[name] = state;
 
-        // Save to localStorage
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(existingStates));
             return true;
@@ -33,6 +28,24 @@ class SaveSystem {
             console.error('Failed to save state:', error);
             return false;
         }
+    }
+
+    // Equivalent to rows.map(row => Array.from(row).join('')).join('\n'), but fast for big grids.
+    serializeCells(cells, width, height) {
+        const decoder = new TextDecoder();
+        const chars = new Uint8Array(width);
+        const rows = new Array(height);
+        for (let y = 0; y < height; y++) {
+            const row = cells.subarray(y * width, (y + 1) * width);
+            let singleDigit = true;
+            for (let x = 0; x < width; x++) {
+                const v = row[x];
+                if (v > 9) { singleDigit = false; break; }
+                chars[x] = 48 + v;
+            }
+            rows[y] = singleDigit ? decoder.decode(chars) : Array.from(row).join('');
+        }
+        return rows.join('\n');
     }
 
     loadState(notation) {
@@ -130,42 +143,49 @@ class SaveSystem {
         return Array.from(numbers).sort((a, b) => a - b);
     }
 
-    applyState(state) {
+        applyState(state) {
         if (!state) return false;
 
-        // Parse notation and set values
         let notationParts = state.notation.split('/');
         if (notationParts.length < 6) {
             console.error('Invalid notation format:', state.notation);
             return false;
         }
 
-        // Remove first char from each part
         notationParts = notationParts.map(part => part.substring(1));
 
         let gridType = notationParts[0] == 'h' ? 'hex' : 'tri';
         gridSystem.setType(gridType);
-        // Deserialize cells from string
+
+        // Deserialize cells from string (same rules as before: width = first row's length)
         let cellRows = state.cells.split('\n');
-        gridSystem.height = cellRows.length;
-        gridSystem.width = cellRows[0].length;
-        gridSystem.cells = cellRows.map(row => Uint8Array.from(row.split('').map(Number)));
+        let height = cellRows.length;
+        let width = cellRows[0].length;
+        let cells = new Uint8Array(width * height);
+        for (let y = 0; y < height; y++) {
+            const row = cellRows[y];
+            const n = Math.min(row.length, width);
+            for (let x = 0; x < n; x++) {
+                const d = row.charCodeAt(x) - 48;
+                cells[y * width + x] = (d >= 0 && d <= 9) ? d : 0;
+            }
+        }
+
         gameRules.neighborDistance = parseInt(notationParts[1]);
         gameRules.cellPhases = parseInt(notationParts[2]);
         gameRules.birthNumbers = this.parseRuleString(notationParts[3]);
         gameRules.survivalNumbers = this.parseRuleString(notationParts[4]);
 
-        // Handle triangle neighborhood type (if present)
         let colorStartIndex = 5;
         if (gridType === 'tri') {
-            // New format with neighborhood type
             gameRules.triangleNeighborhoodType = notationParts[5] === 'V' ? 'vonNeumann' : 'moore';
             colorStartIndex = 6;
         }
 
         aliveColor = this.hexToRgb(notationParts[colorStartIndex]);
         deadColor = this.hexToRgb(notationParts[colorStartIndex + 1]);
-        gridSystem.resize(gridSystem.width, gridSystem.height);
+
+        gridSystem.loadCells(width, height, cells);
 
         return true;
     }
