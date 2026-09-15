@@ -218,35 +218,12 @@ class Interface {
             needsRender = true;
         });
 
-        // Save/load state buttons
-        this.saveStateBtn.mousePressed(() => {
-            let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
-            if (!name) return;
-            if (name.trim() === '') {
-                alert('Name cannot be empty');
-                return;
-            }
-            name = name.trim();
-
-            if (saveSystem.stateExists(name)) {
-                if (!confirm(`State "${name}" already exists. Overwrite?`)) {
-                    return;
-                }
-            }
-
-            saveSystem.saveState(name, this.notation);
-            saveSystem.loadStateList();
-            this.addStateEventListeners();
-        });
-
-        this.clearStatesBtn.mousePressed(() => {
-            confirm('Are you sure you want to clear all saved states?') && saveSystem.deleteAllStates();
-            saveSystem.loadStateList();
-        });
-
+        // Save / library buttons
+        this.saveStateBtn.mousePressed(() => this.handleSaveState());
+        this.clearStatesBtn.mousePressed(() => this.handleClearStates());
+        this.initStateLibraryControls();
         this.initRuleCodeEditor();
         this.initCollapsiblePanels();
-        this.addStateEventListeners();
 
         // Make the code field reflect the actual initial rules
         this.updateRuleNotation();
@@ -435,44 +412,47 @@ class Interface {
 
     // ---------------- Saved states ----------------
 
-    addStateEventListeners() {
-        let loadButtons = document.querySelectorAll('.loadState');
-        let deleteButtons = document.querySelectorAll('.deleteState');
+    async handleSaveState() {
+        let name = prompt('Name:', `State ${new Date().toLocaleString()}`);
+        if (!name) return;
+        if (name.trim() === '') { alert('Name cannot be empty'); return; }
+        name = name.trim();
 
-        loadButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                if (!confirm(`Are you sure you want to load state "${e.target.getAttribute('data-name')}"?`)) {
-                    return;
-                }
+        const existing = await saveSystem.findByName(name);
+        if (existing && !confirm(`State "${name}" already exists. Overwrite?`)) return;
 
-                let name = e.target.getAttribute('data-name');
-                let state = saveSystem.loadState(name);
-                if (state) {
-                    saveSystem.applyState(state);
-                    this.refreshUI();
-                    needsRender = true;
-                } else {
-                    console.error('Failed to load state:', name);
-                }
-                e.stopPropagation();
+        this.saveStateBtn.elt.disabled = true;
+        const label = this.saveStateBtn.html();
+        this.saveStateBtn.html('Saving…');
+        try {
+            await saveSystem.saveState(name);
+        } catch (e) {
+            console.error(e);
+            alert('Could not save the state: ' + (e.message || e));
+        } finally {
+            this.saveStateBtn.html(label);
+            this.saveStateBtn.elt.disabled = false;
+        }
+    }
+
+    async handleClearStates() {
+        if (!confirm('Are you sure you want to delete all saved states? Export them first if you want to keep them.')) return;
+        await saveSystem.deleteAllStates();
+    }
+
+    initStateLibraryControls() {
+        const importBtn = document.getElementById('importStates');
+        const exportAllBtn = document.getElementById('exportAllStates');
+        const fileInput = document.getElementById('importFileInput');
+
+        if (importBtn && fileInput) {
+            importBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', async () => {
+                await saveSystem.importFiles(fileInput.files);
+                fileInput.value = '';
             });
-        });
-
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                if (!confirm(`Are you sure you want to delete state "${e.target.getAttribute('data-name')}"?`)) {
-                    return;
-                }
-
-                let name = e.target.getAttribute('data-name');
-                if (saveSystem.deleteState(name)) {
-                    saveSystem.loadStateList();
-                    this.addStateEventListeners();
-                } else {
-                    console.error('Failed to delete state:', name);
-                }
-            });
-        });
+        }
+        if (exportAllBtn) exportAllBtn.addEventListener('click', () => saveSystem.exportAll());
     }
 
     // ---------------- Helpers ----------------

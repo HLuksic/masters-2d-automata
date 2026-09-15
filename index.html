@@ -19,9 +19,13 @@
                 <button id="toggleStates" class="panel-toggle" title="Collapse saved states">◀</button>
             </div>
             <div class="panel-body">
-                <div class="control-group">
+                <div class="control-group state-actions">
+                    <button id="importStates" title="Import .cauto state files">Import</button>
+                    <button id="exportAllStates" title="Download every saved state as one file">Export all</button>
                     <button id="clearStates">Clear</button>
                 </div>
+                <input type="file" id="importFileInput" accept=".cauto,application/octet-stream" multiple hidden>
+                <div id="storageUsage" class="storage-usage"></div>
                 <ul id="statesList"></ul>
             </div>
         </div>

@@ -113,7 +113,40 @@ body {
     white-space: nowrap;
 }
 
-#stateCard {
+#savedStates.drop-active {
+    outline: 2px dashed #007bff;
+    outline-offset: -6px;
+}
+
+.state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 10px 0 6px;
+}
+
+.state-actions button {
+    margin: 0;
+    padding: 6px 10px;
+    font-size: 0.85em;
+}
+
+.storage-usage {
+    font-size: 0.7em;
+    color: #666;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.states-empty {
+    font-size: 0.75em;
+    color: #888;
+    text-align: center;
+    padding: 10px;
+}
+
+.state-card {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -125,15 +158,57 @@ body {
     padding: 10px;
     margin-bottom: 10px;
     width: 85%;
-    height: auto;
     box-shadow: 4px 4px rgba(0, 0, 0, 1);
 }
 
-#stateCard img {
+.state-card h3 {
+    margin: 0 0 4px;
+    text-align: center;
+    word-break: break-word;
+}
+
+.state-card .state-notation {
+    font-family: monospace;
+    word-break: break-all;
+    text-align: center;
+    margin: 0 0 4px;
+}
+
+.state-card .state-meta {
+    white-space: pre-line;
+    text-align: center;
+    color: #666;
+    margin: 0 0 6px;
+}
+
+.state-card img {
     width: 100%;
     height: auto;
     border-radius: 4px;
+    background: #f4f4f4;
 }
+
+.state-card .control-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    margin: 8px 0 0;
+}
+
+.state-card .control-group button {
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 1em;
+    box-shadow: 2px 2px rgba(0, 0, 0, 1);
+}
+
+.state-card .deleteState { background: #c62828; }
+.state-card .deleteState:hover { background: #8e1f1f; }
+.state-card .exportState,
+.state-card .renameState { background: #5a6673; }
+.state-card .exportState:hover,
+.state-card .renameState:hover { background: #3d4751; }
 
 /* ---------------- Controls panel ---------------- */
 

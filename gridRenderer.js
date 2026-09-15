@@ -126,6 +126,43 @@ class GridRenderer {
         };
     }
 
+    // One render of the grid into `fbo` (null = the canvas) with an arbitrary virtual camera.
+    // Used both for the live view and for offscreen thumbnails.
+    drawPass({ fbo = null, bufW, bufH, camX, camY, sx, sy, showOutline, layout }) {
+        const gl = this.gl;
+        const b = layout.bounds;
+
+        resetGLState(gl);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.viewport(0, 0, bufW, bufH);
+
+        const p = this.program.use();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, gridSystem.stateTexture);
+        gl.uniform1i(p.loc('u_state'), 0);
+        gl.uniform2i(p.loc('u_gridSize'), gridSystem.width, gridSystem.height);
+        gl.uniform1i(p.loc('u_gridType'), gridSystem.type === 'hex' ? 0 : 1);
+        gl.uniform1f(p.loc('u_cellSize'), this.cellSize);
+        gl.uniform2f(p.loc('u_start'), layout.startX, layout.startY);
+        gl.uniform2f(p.loc('u_camera'), camX, camY);
+        gl.uniform2f(p.loc('u_pixelScale'), sx, sy);
+        gl.uniform2f(p.loc('u_bufferCenter'), bufW / 2, bufH / 2);
+        gl.uniform3f(p.loc('u_aliveColor'), aliveColor[0] / 255, aliveColor[1] / 255, aliveColor[2] / 255);
+        gl.uniform3f(p.loc('u_deadColor'), deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255);
+        gl.uniform1i(p.loc('u_phases'), gameRules.cellPhases);
+        gl.uniform1i(p.loc('u_showOutline'), showOutline ? 1 : 0);
+
+        // Outline rectangle in device pixels (y up), like the old 1px LINE_LOOP
+        const toDevX = wx => bufW / 2 + (wx - camX) * sx;
+        const toDevY = wy => bufH / 2 - (wy - camY) * sy;
+        gl.uniform4f(p.loc('u_outline'),
+            Math.floor(toDevX(b.left)), Math.floor(toDevY(b.bottom)),
+            Math.floor(toDevX(b.right)), Math.floor(toDevY(b.top)));
+
+        drawFullscreenTriangle(gl, this.vao);
+        if (fbo) gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+
     render() {
         if (!this.gl) return;
         const gl = this.gl;
@@ -137,38 +174,87 @@ class GridRenderer {
         camera.minZoom = Math.min(0.1, fit * 0.5);
 
         const bufW = gl.drawingBufferWidth, bufH = gl.drawingBufferHeight;
-        const sx = camera.zoom * bufW / width;
-        const sy = camera.zoom * bufH / height;
 
-        resetGLState(gl);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.viewport(0, 0, bufW, bufH);
-
-        const p = this.program.use();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, gridSystem.stateTexture);
-        gl.uniform1i(p.loc('u_state'), 0);
-        gl.uniform2i(p.loc('u_gridSize'), gridSystem.width, gridSystem.height);
-        gl.uniform1i(p.loc('u_gridType'), gridSystem.type === 'hex' ? 0 : 1);
-        gl.uniform1f(p.loc('u_cellSize'), this.cellSize);
-        gl.uniform2f(p.loc('u_start'), layout.startX, layout.startY);
-        gl.uniform2f(p.loc('u_camera'), camera.x, camera.y);
-        gl.uniform2f(p.loc('u_pixelScale'), sx, sy);
-        gl.uniform2f(p.loc('u_bufferCenter'), bufW / 2, bufH / 2);
-        gl.uniform3f(p.loc('u_aliveColor'), aliveColor[0] / 255, aliveColor[1] / 255, aliveColor[2] / 255);
-        gl.uniform3f(p.loc('u_deadColor'), deadColor[0] / 255, deadColor[1] / 255, deadColor[2] / 255);
-        gl.uniform1i(p.loc('u_phases'), gameRules.cellPhases);
-        gl.uniform1i(p.loc('u_showOutline'), ui.showOutline ? 1 : 0);
-
-        // Outline rectangle in device pixels (y up), like the old 1px LINE_LOOP
-        const toDevX = wx => bufW / 2 + (wx - camera.x) * sx;
-        const toDevY = wy => bufH / 2 - (wy - camera.y) * sy;
-        gl.uniform4f(p.loc('u_outline'),
-            Math.floor(toDevX(b.left)), Math.floor(toDevY(b.bottom)),
-            Math.floor(toDevX(b.right)), Math.floor(toDevY(b.top)));
-
-        drawFullscreenTriangle(gl, this.vao);
+        this.drawPass({
+            fbo: null,
+            bufW, bufH,
+            camX: camera.x, camY: camera.y,
+            sx: camera.zoom * bufW / width,
+            sy: camera.zoom * bufH / height,
+            showOutline: !!(typeof ui !== 'undefined' && ui && ui.showOutline),
+            layout
+        });
     }
+
+    // Renders the ENTIRE grid (independent of camera/zoom/canvas size) into an offscreen
+    // framebuffer and returns a 2D canvas with the result. Supersampled, then downscaled.
+    captureThumbnail(maxDim = 480, supersample = 2) {
+        const gl = this.gl;
+        const layout = this.getGridLayout();
+        const b = layout.bounds;
+
+        const worldW = Math.max(1e-6, b.right - b.left);
+        const worldH = Math.max(1e-6, b.bottom - b.top);
+        const aspect = worldW / worldH;
+
+        let outW, outH;
+        if (aspect >= 1) { outW = maxDim; outH = Math.max(1, Math.round(maxDim / aspect)); }
+        else { outH = maxDim; outW = Math.max(1, Math.round(maxDim * aspect)); }
+
+        const maxTex = gridSystem.maxSize || 2048;
+        const ss = Math.max(1, Math.min(supersample, Math.floor(maxTex / Math.max(outW, outH)) || 1));
+        const bufW = outW * ss, bufH = outH * ss;
+
+        // Fit the whole grid inside the buffer, leaving room for the 1px outline.
+        const pad = 2 * ss;
+        const scale = Math.min((bufW - 2 * pad) / worldW, (bufH - 2 * pad) / worldH);
+
+        const tex = createGLTexture(gl, gl.RGBA8, bufW, bufH);
+        const fbo = createGLFramebuffer(gl, tex);
+
+        this.drawPass({
+            fbo, bufW, bufH,
+            camX: (b.left + b.right) / 2,
+            camY: (b.top + b.bottom) / 2,
+            sx: scale, sy: scale,
+            showOutline: true,
+            layout
+        });
+
+        const pixels = new Uint8Array(bufW * bufH * 4);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
+        gl.readPixels(0, 0, bufW, bufH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.deleteFramebuffer(fbo);
+        gl.deleteTexture(tex);
+
+        // GL rows come back bottom-up; flip while copying into the 2D canvas.
+        const full = document.createElement('canvas');
+        full.width = bufW;
+        full.height = bufH;
+        const fctx = full.getContext('2d');
+        const img = fctx.createImageData(bufW, bufH);
+        const stride = bufW * 4;
+        for (let y = 0; y < bufH; y++) {
+            img.data.set(pixels.subarray((bufH - 1 - y) * stride, (bufH - y) * stride), y * stride);
+        }
+        fctx.putImageData(img, 0, 0);
+
+        needsRender = true; // the live canvas still holds the previous frame
+
+        if (ss === 1) return full;
+
+        const out = document.createElement('canvas');
+        out.width = outW;
+        out.height = outH;
+        const octx = out.getContext('2d');
+        octx.imageSmoothingEnabled = true;
+        octx.imageSmoothingQuality = 'high';
+        octx.drawImage(full, 0, 0, outW, outH);
+        return out;
+    }
+
 
     screenToGrid(screenX, screenY) {
         const worldPos = camera.screenToWorld(screenX, screenY);
